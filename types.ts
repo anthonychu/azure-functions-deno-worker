@@ -9,7 +9,7 @@
  * @returns Output bindings (optional). If you are returning a result from a Promise (or an async function), this
  * result will be passed to JSON.stringify unless it is a string, Buffer, ArrayBufferView, or number.
  */
-export declare type AzureFunction = ((context: Context, ...args: any[]) => Promise<any> | void);
+export declare type AzureFunction = ((context: Context, ...args: any[]) => Promise<any> | void | any);
 /**
  * The context object can be used for writing logs, reading data from bindings, setting outputs and using
  * the context.done callback when your exported function is synchronous. A context object is passed
@@ -69,10 +69,10 @@ export interface HttpRequest {
      * HTTP request method used to invoke this function.
      */
     method: HttpMethod | null;
-    /**
-     * Request URL.
-     */
-    url: string;
+    // /**
+    //  * Request URL.
+    //  */
+    // url: string;
     /**
      * HTTP request headers.
      */
@@ -180,21 +180,22 @@ export interface Logger {
     /**
      * Writes streaming function logs at the default trace level.
      */
-    (...args: any[]): void;
-    /**
-     * Writes to error level logging or lower.
-     */
-    error(...args: any[]): void;
-    /**
-     * Writes to warning level logging or lower.
-     */
-    warn(...args: any[]): void;
-    /**
-     * Writes to info level logging or lower.
-     */
-    info(...args: any[]): void;
-    /**
-     * Writes to verbose level logging.
-     */
-    verbose(...args: any[]): void;
+    (message: string): void;
+    // /**
+    //  * Writes to error level logging or lower.
+    //  */
+    // error(...args: any[]): void;
+    // /**
+    //  * Writes to warning level logging or lower.
+    //  */
+    // warn(...args: any[]): void;
+    // /**
+    //  * Writes to info level logging or lower.
+    //  */
+    // info(...args: any[]): void;
+    // /**
+    //  * Writes to verbose level logging.
+    //  */
+    // verbose(...args: any[]): void;
+    logs: string[];
 }
