@@ -4,7 +4,7 @@ import { AzureFunction, Context, Logger, HttpRequest, HttpMethod } from "./types
 export interface FunctionRegistration {
     name: string,
     handler: AzureFunction,
-    metadata: any
+    metadata?: any
 }
 
 function createLogger(isHttpPassthrough: boolean): Logger {
@@ -59,7 +59,7 @@ function parseBody(body: { type: string, value: any }) {
 function tryJsonParse(input: any) {
     try {
         input = JSON.parse(input);
-    } catch {}
+    } catch { }
     return input;
 }
 
@@ -69,7 +69,7 @@ function toCamelCase(input: string) {
 }
 
 function toCamelCaseKeys(input: any) {
-    if (typeof(input) === "object") {
+    if (typeof (input) === "object") {
         for (const [key, value] of Object.entries(input)) {
             const firstChar = key.substring(0, 1);
             if (firstChar !== firstChar.toLowerCase()) {
@@ -90,10 +90,13 @@ export class AzureFunctionsWorker {
         const router = new Router();
 
         for (const registration of functionRegistrations) {
+            if (!registration.metadata) {
+                registration.metadata = getDefaultFunctionMetadata();
+            }
             router.all(`/${registration.name}`, async (ctx: OakContext) => {
                 try {
                     let body: Body;
-                    
+
                     try {
                         body = await ctx.request.body();
                     } catch {
@@ -112,7 +115,7 @@ export class AzureFunctionsWorker {
                         // http passthrough
                         const req = new FunctionHttpRequest(ctx.request.method);
                         req.body = parsedBody;
-                        req.rawBody = typeof(req.body) === "string" ? req.body : JSON.stringify(req.body);
+                        req.rawBody = typeof (req.body) === "string" ? req.body : JSON.stringify(req.body);
                         for (const h of ctx.request.headers) {
                             req.headers[h[0]] = h[1];
                         }
@@ -124,7 +127,7 @@ export class AzureFunctionsWorker {
                         parsedBody.Metadata.sys = tryJsonParse(parsedBody.Metadata.sys);
                         toCamelCaseKeys(parsedBody.Metadata.sys);
                         toCamelCaseKeys(parsedBody.Data.req);
-                        
+
                         context.req = parsedBody.Data.req;
                         for (const [key, value] of Object.entries(parsedBody.Data)) {
                             context.bindings[toCamelCase(key)] = tryJsonParse(value);
@@ -137,12 +140,12 @@ export class AzureFunctionsWorker {
                     const result = await Promise.resolve(registration.handler(context));
 
                     if (isHttpPassthrough) {
-                        const httpOutputBinding = 
+                        const httpOutputBinding =
                             registration.metadata.bindings.find((b: any) => b.type === "http" && b.direction === "out");
-                        
+
                         let funcResponse: any;
                         if (httpOutputBinding.name === "$return") {
-                            if (typeof(result) === "string") {
+                            if (typeof (result) === "string") {
                                 funcResponse = {
                                     status: !!result ? 200 : 204,
                                     body: result
@@ -153,7 +156,7 @@ export class AzureFunctionsWorker {
                         } else {
                             funcResponse = context.res;
                         }
-                        
+
                         ctx.response.status = funcResponse.status;
                         ctx.response.body = funcResponse.body;
                         ctx.response.headers = new Headers();
@@ -215,7 +218,7 @@ export class AzureFunctionsWorker {
                     console.warn(`Folder ${dirEntry.name} contains functions.json but also has other files. Delete skipped.`);
                 } else if (hasFunctionJson) {
                     console.info(`Deleting folder ${dirEntry.name}.`);
-                    await Deno.remove(dirEntry.name, {recursive: true});
+                    await Deno.remove(dirEntry.name, { recursive: true });
                 }
             }
         }
@@ -224,11 +227,33 @@ export class AzureFunctionsWorker {
         for (const func of this.#functionRegistrations) {
             try {
                 await Deno.mkdir(func.name);
-            } catch {}
+            } catch { }
             const encoder = new TextEncoder();
             const data = encoder.encode(JSON.stringify(func.metadata, null, 2));
             console.info(`Generating file ${func.name}/function.json.`)
             await Deno.writeFile(`${func.name}/function.json`, data);
         }
     }
+}
+
+function getDefaultFunctionMetadata() {
+    return {
+        "bindings": [
+            {
+                "type": "httpTrigger",
+                "authLevel": "anonymous",
+                "direction": "in",
+                "methods": [
+                    "GET",
+                    "POST"
+                ],
+                "name": "req"
+            },
+            {
+                "type": "http",
+                "direction": "out",
+                "name": "res"
+            }
+        ]
+    };
 }

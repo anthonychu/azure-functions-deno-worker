@@ -14,6 +14,7 @@ if (args.length === 1 && args[0] === "init") {
 } else if (args.length === 1 && args[0] === "start"
         || args.length === 2 && `${args[0]} ${args[1]}` === "host start") {
     await generateFunctions();
+    await createJSBundle();
     await runFunc("start");
 }
 
@@ -24,6 +25,14 @@ async function fileExists(path: string) {
     } catch {
         return false;
     }
+}
+
+async function createJSBundle() {
+    const bundleFileName = "worker.bundle.js";
+    const cmd = ["deno", "bundle", "--unstable", "worker.ts", bundleFileName];
+    console.info(`Running command: ${cmd.join(" ")}`);
+    const generateProcess = Deno.run({ cmd });
+    await generateProcess.status();
 }
 
 async function downloadBinary() {
@@ -73,18 +82,17 @@ async function initializeFromTemplate() {
 }
 
 async function generateFunctions() {
+    console.info("Generating functions...");
     const generateProcess = Deno.run({
         cmd: ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--unstable", "worker.ts"],
         env: { "DENOFUNC_GENERATE": "1" }
     });
-    
     await generateProcess.status();
 }
 
 async function runFunc(...args: string[]) {
-    const proc = Deno.run({
-        cmd: [ "func", ...args ]
-    });
-
+    const cmd = [ "func", ...args ];
+    console.info(`Starting Azure Functions Core Tools: ${cmd.join(" ")}`);
+    const proc = Deno.run({ cmd });
     await proc.status();
 }
