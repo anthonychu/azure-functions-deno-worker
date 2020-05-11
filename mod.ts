@@ -1,8 +1,9 @@
-import { Application, Router, Context as OakContext } from "https://deno.land/x/oak/mod.ts";
+import { Application, Router, Context as OakContext, Body } from "https://deno.land/x/oak/mod.ts";
 import { AzureFunction, Context, Logger, HttpRequest, HttpMethod } from "./types.ts"
 
 export interface FunctionRegistration {
-    func: AzureFunction,
+    name: string,
+    handler: AzureFunction,
     metadata: any
 }
 
@@ -80,19 +81,31 @@ function toCamelCaseKeys(input: any) {
     }
 }
 
-export class Worker {
+export class AzureFunctionsWorker {
     #app: Application;
+    #functionRegistrations: FunctionRegistration[];
 
     constructor(functionRegistrations: FunctionRegistration[]) {
+        this.#functionRegistrations = functionRegistrations;
         const router = new Router();
 
         for (const registration of functionRegistrations) {
-            router.all(`/${registration.func.name}`, async (ctx: OakContext) => {
+            router.all(`/${registration.name}`, async (ctx: OakContext) => {
                 try {
-                    const body = await ctx.request.body();
+                    let body: Body;
+                    
+                    try {
+                        body = await ctx.request.body();
+                    } catch {
+                        body = {
+                            type: "undefined",
+                            value: undefined
+                        };
+                    }
+
                     let parsedBody: any = parseBody(body);
 
-                    const isHttpPassthrough: boolean = !(parsedBody.Data && parsedBody.Metadata);
+                    const isHttpPassthrough: boolean = parsedBody === undefined || !(parsedBody.Data && parsedBody.Metadata);
                     const context = new FunctionContext();
 
                     if (isHttpPassthrough) {
@@ -119,11 +132,9 @@ export class Worker {
                         for (const [key, value] of Object.entries(parsedBody.Metadata)) {
                             context.bindingData[toCamelCase(key)] = tryJsonParse(value);
                         }
-                        console.dir(parsedBody);
-                        console.dir(context)
                     }
 
-                    const result = await Promise.resolve(registration.func(context));
+                    const result = await Promise.resolve(registration.handler(context));
 
                     if (isHttpPassthrough) {
                         const httpOutputBinding = 
@@ -175,9 +186,49 @@ export class Worker {
         this.#app = app;
     }
 
-    async start() {
-        const port = Deno.env.get("FUNCTIONS_HTTPWORKER_PORT") || 8000;
-        console.log("listening to port " + port);
-        return await this.#app.listen({ port: +port });
+    async run() {
+        if (Deno.env.get("DENOFUNC_GENERATE")) {
+            await this.regenerateFunctions();
+        } else {
+            const port = Deno.env.get("FUNCTIONS_HTTPWORKER_PORT") || 8000;
+            console.log("listening to port " + port);
+            return await this.#app.listen({ port: +port });
+        }
+    }
+
+    private async regenerateFunctions() {
+        console.info("Cleaning function folders...")
+        for await (const dirEntry of Deno.readDir(".")) {
+            if (dirEntry.isDirectory) {
+                let hasFunctionJson, hasOtherThings = false;
+                //console.log(dirEntry.name);
+                for await (const subdirEntry of Deno.readDir(dirEntry.name)) {
+                    //console.log("----", subdirEntry.name)
+                    if (subdirEntry.isFile && subdirEntry.name === "function.json") {
+                        hasFunctionJson = true;
+                    } else {
+                        hasOtherThings = true;
+                    }
+                }
+
+                if (hasFunctionJson && hasOtherThings) {
+                    console.warn(`Folder ${dirEntry.name} contains functions.json but also has other files. Delete skipped.`);
+                } else if (hasFunctionJson) {
+                    console.info(`Deleting folder ${dirEntry.name}.`);
+                    await Deno.remove(dirEntry.name, {recursive: true});
+                }
+            }
+        }
+
+        console.info("Generating function folders...")
+        for (const func of this.#functionRegistrations) {
+            try {
+                await Deno.mkdir(func.name);
+            } catch {}
+            const encoder = new TextEncoder();
+            const data = encoder.encode(JSON.stringify(func.metadata, null, 2));
+            console.info(`Generating file ${func.name}/function.json.`)
+            await Deno.writeFile(`${func.name}/function.json`, data);
+        }
     }
 }
