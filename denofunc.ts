@@ -10,7 +10,7 @@ if (parsedArgs["help"]) {
 }
 
 if (args.length === 1 && args[0] === "init") {
-    await initProject();
+    await initializeFromTemplate();
 } else if (args.length === 1 && args[0] === "start"
         || args.length === 2 && `${args[0]} ${args[1]}` === "host start") {
     await generateFunctions();
@@ -26,14 +26,14 @@ async function fileExists(path: string) {
     }
 }
 
-async function initProject() {
+async function downloadBinary() {
     const binDir = "./bin/linux";
     const binPath = `${binDir}/deno`;
     const binZipPath = `${binDir}/deno.zip`;
 
     if (!(await fileExists(binPath))) {
         // download deno binary (that gets deployed to Azure)
-        const response = await fetch(`https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-unknown-linux-gnu.zip`)
+        const response = await fetch(`https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-unknown-linux-gnu.zip`);
         await ensureDir(binDir);
         const zipFile = await Deno.create(binZipPath);
         const download = new Deno.Buffer(await response.arrayBuffer());
@@ -45,6 +45,30 @@ async function initProject() {
         await zip.unzip(binDir);
         await Deno.chmod(binPath, 0o755)
         await Deno.remove(binZipPath);
+    }
+}
+
+async function initializeFromTemplate() {
+    const templateZipPath = `./template.zip`;
+
+    let isEmpty = true;
+    for await (const dirEntry of Deno.readDir(".")) {
+        isEmpty = false;
+    }
+
+    if (isEmpty) {
+        // download deno binary (that gets deployed to Azure)
+        const response = await fetch("https://github.com/anthonychu/azure-functions-deno-template/archive/master.zip");
+        const zipFile = await Deno.create(templateZipPath);
+        const download = new Deno.Buffer(await response.arrayBuffer());
+        await Deno.copy(download, zipFile);
+        Deno.close(zipFile.rid);
+
+        const zip = await readZip(templateZipPath);
+        await zip.unzip(".");
+        await Deno.remove(templateZipPath);
+    } else {
+        console.error("Cannot initialize. Folder is not empty.")
     }
 }
 
