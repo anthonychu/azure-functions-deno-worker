@@ -6,16 +6,22 @@ import { ensureDir } from "./deps.ts";
 const parsedArgs = parse(Deno.args);
 
 if (parsedArgs["help"]) {
-    console.log("print help");
+    printHelp();
+    Deno.exit();
 }
 
 if (args.length === 1 && args[0] === "init") {
     await initializeFromTemplate();
 } else if (args.length === 1 && args[0] === "start"
-        || args.length === 2 && `${args[0]} ${args[1]}` === "host start") {
+    || args.length === 2 && `${args[0]} ${args[1]}` === "host start") {
     await generateFunctions();
     await createJSBundle();
     await runFunc("start");
+} else if (args.length === 2 && args[0] === "publish") {
+    await downloadBinary();
+    await publishApp(args[1]);
+} else {
+    printHelp();
 }
 
 async function fileExists(path: string) {
@@ -41,8 +47,10 @@ async function downloadBinary() {
     const binZipPath = `${binDir}/deno.zip`;
 
     if (!(await fileExists(binPath))) {
+        const downloadUrl = `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-unknown-linux-gnu.zip`;
+        console.info(`Downloading deno binary from: ${downloadUrl} ...`);
         // download deno binary (that gets deployed to Azure)
-        const response = await fetch(`https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-unknown-linux-gnu.zip`);
+        const response = await fetch(downloadUrl);
         await ensureDir(binDir);
         const zipFile = await Deno.create(binZipPath);
         const download = new Deno.Buffer(await response.arrayBuffer());
@@ -54,6 +62,7 @@ async function downloadBinary() {
         await zip.unzip(binDir);
         await Deno.chmod(binPath, 0o755)
         await Deno.remove(binZipPath);
+        console.info(`Downloaded deno binary at: ${await Deno.realPath(binPath)}`);
     }
 }
 
@@ -91,8 +100,56 @@ async function generateFunctions() {
 }
 
 async function runFunc(...args: string[]) {
-    const cmd = [ "func", ...args ];
+    const cmd = ["func", ...args];
     console.info(`Starting Azure Functions Core Tools: ${cmd.join(" ")}`);
     const proc = Deno.run({ cmd });
     await proc.status();
+}
+
+async function publishApp(appName: string) {
+    const cmd = ["func", "azure", "functionapp", "publish", appName, "--no-build", "-b", "local", "--force"];
+    console.info(`Publishing app: ${cmd.join(" ")}`);
+    const proc = Deno.run({ cmd });
+    await proc.status();
+}
+
+function printLogo() {
+    const logo = `
+               @@@@@@@@@@@,             
+          @@@@@@@@@@@@@@@@@@@@@         
+       @@@@@@@@@@        @@@@@@@@@      
+     @@@@@@@                 @@@@@@@    
+    @@@@@  @@  @@              @@@@@@   
+   @@@@@                        @@@@@@  
+   @@@@@                         @@@@@@ 
+   @@@@@@                        @@@@@@ 
+   @@@@@@@@@@@@@@@@@@             @@@@@ 
+   @@@@@@@@@@@@@@@@@@@            @@@@  
+    @@@@@@@@@@@@@@@@@@            @@@   
+      @@@@@@@@@@@@@@@@            @@    
+        @@@@@@@@@@@@@@@                 
+           @@@@@@@@@@@@                 
+                (@@@@@@                 
+    `;
+    console.info(logo);
+}
+
+function printHelp() {
+    printLogo();
+    console.info("Deno for Azure Functions - CLI");
+    console.info(`
+Commands:
+
+denofunc --help
+    This screen
+
+denofunc init
+    Initialize project in an empty folder
+
+denofunc start
+    Generate functions artifacts and start Azure Functions Core Tools
+
+denofunc publish <function_app_name>
+    Publish to Azure (Linux Consumption plan only)
+    `);
 }
