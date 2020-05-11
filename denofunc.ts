@@ -1,7 +1,5 @@
 const { args } = Deno;
-import { parse } from "./deps.ts";
-import { readZip } from "./deps.ts";
-import { ensureDir } from "./deps.ts";
+import { parse, readZip, ensureDir, move, walk } from "./deps.ts";
 
 const parsedArgs = parse(Deno.args);
 
@@ -75,6 +73,7 @@ async function initializeFromTemplate() {
     }
 
     if (isEmpty) {
+        console.info("Initializing project...");
         // download deno binary (that gets deployed to Azure)
         const response = await fetch("https://github.com/anthonychu/azure-functions-deno-template/archive/master.zip");
         const zipFile = await Deno.create(templateZipPath);
@@ -83,8 +82,24 @@ async function initializeFromTemplate() {
         Deno.close(zipFile.rid);
 
         const zip = await readZip(templateZipPath);
+
+        const subDirPath = "azure-functions-deno-template-master";
+
         await zip.unzip(".");
         await Deno.remove(templateZipPath);
+
+        for await (const entry of walk(".")) {
+            if (entry.path.startsWith(subDirPath) && entry.path !== subDirPath) {
+                const dest = entry.path.replace(subDirPath, ".");
+                console.info(dest);
+                if (entry.isDirectory) {
+                    await Deno.mkdir(dest, { recursive: true });
+                } else {
+                    await move(entry.path, dest);
+                }
+            }
+        }
+        await Deno.remove(subDirPath, { recursive: true });
     } else {
         console.error("Cannot initialize. Folder is not empty.")
     }
