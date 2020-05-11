@@ -1,7 +1,7 @@
 const { args } = Deno;
-import { parse } from "https://deno.land/std/flags/mod.ts";
-import { readZip } from "https://deno.land/x/jszip/mod.ts";
-import { ensureDir } from "https://deno.land/std/fs/ensure_dir.ts";
+import { parse } from "./deps.ts";
+import { readZip } from "./deps.ts";
+import { ensureDir } from "./deps.ts";
 
 const parsedArgs = parse(Deno.args);
 
@@ -50,7 +50,7 @@ async function initProject() {
 
 async function generateFunctions() {
     const generateProcess = Deno.run({
-        cmd: ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "worker.ts"],
+        cmd: ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--unstable", "worker.ts"],
         env: { "DENOFUNC_GENERATE": "1" }
     });
     

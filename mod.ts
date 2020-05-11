@@ -1,4 +1,4 @@
-import { Application, Router, Context as OakContext, Body } from "https://deno.land/x/oak/mod.ts";
+import { Application, Router, OakContext, Body } from "./deps.ts";
 import { AzureFunction, Context, Logger, HttpRequest, HttpMethod } from "./types.ts"
 
 export interface FunctionRegistration {
