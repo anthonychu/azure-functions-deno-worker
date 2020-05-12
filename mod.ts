@@ -204,9 +204,7 @@ export class AzureFunctionsWorker {
         for await (const dirEntry of Deno.readDir(".")) {
             if (dirEntry.isDirectory) {
                 let hasFunctionJson, hasOtherThings = false;
-                //console.log(dirEntry.name);
                 for await (const subdirEntry of Deno.readDir(dirEntry.name)) {
-                    //console.log("----", subdirEntry.name)
                     if (subdirEntry.isFile && subdirEntry.name === "function.json") {
                         hasFunctionJson = true;
                     } else {
