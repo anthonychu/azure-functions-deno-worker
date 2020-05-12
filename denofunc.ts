@@ -17,6 +17,8 @@ if (args.length === 1 && args[0] === "init") {
     await runFunc("start");
 } else if (args.length === 2 && args[0] === "publish") {
     await downloadBinary();
+    await generateFunctions();
+    await createJSBundle();
     await publishApp(args[1]);
 } else {
     printHelp();
