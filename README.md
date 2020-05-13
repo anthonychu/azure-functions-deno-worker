@@ -65,6 +65,12 @@ deno install --allow-run --allow-read --allow-write --allow-net --unstable --for
     --name=denofunc https://deno.land/x/azure_functions/denofunc.ts
 ```
 
+Confirm it is installed correctly:
+
+```bash
+denofunc --help
+```
+
 ## Getting started
 
 ### Create and run an app locally
