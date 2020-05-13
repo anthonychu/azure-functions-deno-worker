@@ -1,8 +1,26 @@
 # Deno Worker for Azure Functions
 
+```
+               @@@@@@@@@@@,             
+          @@@@@@@@@@@@@@@@@@@@@         
+       @@@@@@@@@@        @@@@@@@@@      
+     @@@@@@@                 @@@@@@@    
+    @@@@@  @@  @@              @@@@@@   
+   @@@@@                        @@@@@@  
+   @@@@@                         @@@@@@ 
+   @@@@@@                        @@@@@@ 
+   @@@@@@@@@@@@@@@@@@             @@@@@ 
+   @@@@@@@@@@@@@@@@@@@            @@@@  
+    @@@@@@@@@@@@@@@@@@            @@@   
+      @@@@@@@@@@@@@@@@            @@    
+        @@@@@@@@@@@@@@@                 
+           @@@@@@@@@@@@                 
+                (@@@@@@               
+```
+
 ## Overview
 
-This is a worker that lets you run Deno on Azure Functions. It implements the Azure Functions Custom Handlers protocol and runs on the Azure Functions Consumption (serverless) plan.
+This is a worker that lets you run Deno on [Azure Functions](https://docs.microsoft.com/azure/azure-functions/functions-overview). It implements the [Azure Functions Custom Handlers](https://docs.microsoft.com/azure/azure-functions/functions-custom-handlers) protocol and runs on the Azure Functions Consumption (serverless) plan.
 
 The project includes a CLI `denofunc` to make it easy to create, run, and deploy your Deno Azure Functions apps.
 
@@ -10,10 +28,10 @@ The project includes a CLI `denofunc` to make it easy to create, run, and deploy
 
 > Note: Currently, this has only been tested to run locally on macOS. It should run on Linux and Windows as well, but needs to be verified.
 
-* Deno - 1.0.0-rc2 or above
-* Azure Functions Core Tools V3 - needed for running the app locally and deploying it
-* Azure CLI - needed for deploying the app
-* `denofunc` CLI - see below
+* [Deno](https://deno.land/x/install/) - 1.0.0-rc2 or above
+* [Azure Functions Core Tools V3](https://github.com/Azure/azure-functions-core-tools#azure-functions-core-tools) - needed for running the app locally and deploying it
+* [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
+* `denofunc` CLI - see [below](#installing-the-denofunc-cli)
 
 ### Installing the denofunc CLI
 
@@ -22,7 +40,8 @@ To help create, run, and deploy a Deno for Azure Functions app, you need to inst
 To install the CLI, run the following Deno command.
 
 ```bash
-deno install --allow-run --allow-read --allow-write --allow-net --unstable --name=denofunc denofunc.ts
+deno install --allow-run --allow-read --allow-write --allow-net --unstable --name=denofunc \
+    https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/master/denofunc.ts
 ```
 
 ## Getting started
