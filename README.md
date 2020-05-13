@@ -36,7 +36,7 @@ denofunc publish $functionAppName
 
 For more information, try the [quickstart](#getting-started) below.
 
-### Simplified programming model
+### Programming model
 
 All Azure Functions [triggers and bindings](https://docs.microsoft.com/azure/azure-functions/functions-triggers-bindings) (including custom bindings) are supported.
 
