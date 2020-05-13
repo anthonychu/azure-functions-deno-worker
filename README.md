@@ -118,4 +118,4 @@ Now that you've run the function app locally, it's time to deploy it to Azure!
 
 ---
 
-> **Disclaimer:** This is not an official Microsoft project and it is not officially supported by Microsoft.
+> **Disclaimer:** This is a community open source project. No official support is provided by Microsoft.
