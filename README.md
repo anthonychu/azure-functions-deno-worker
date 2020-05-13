@@ -7,7 +7,7 @@
    @@@@@ @  @           *@@@@@              @   %%%%%%    @
    @@@                    @@@@@           @@   %%%%%%      @@
   @@@@@                   @@@@@        @@@    %%%%%%%%%%%    @@@
-  @@@@@@@@&&&&@@@          @@@@      @@      %%%%%%%%%%        @@
+  @@@@@@@@@@@@@@@          @@@@      @@      %%%%%%%%%%        @@
    @@@@@@@@@@@@@@          @@@@        @@         %%%%       @@
     @@@@@@@@@@@@@@         @@@           @@      %%%       @@
      @@@@@@@@@@@@@         @               @@    %%      @@
@@ -28,9 +28,9 @@ The project includes a CLI `denofunc` to make it easy to create, run, and deploy
 * [Deno](https://deno.land/x/install/) - 1.0.0-rc2 or above
 * [Azure Functions Core Tools V3](https://github.com/Azure/azure-functions-core-tools#azure-functions-core-tools) - needed for running the app locally and deploying it
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
-* `denofunc` CLI - see [below](#installing-the-denofunc-cli)
+* `denofunc` CLI - see [below](#install-the-denofunc-cli)
 
-### Installing the denofunc CLI
+### Install the denofunc CLI
 
 To help create, run, and deploy a Deno for Azure Functions app, you need to install the `denofunc` CLI. `denofunc` wraps the Azure Functions Core Tools (`func`) and is used for generating artifacts required to run/deploy the app.
 
@@ -54,13 +54,9 @@ deno install --allow-run --allow-read --allow-write --allow-net --unstable --nam
     ```
 
     A few of the files that are important to know about:
-    - `functions/*` - your functions
-    - `worker.ts` - the Deno worker used by Azure Functions
-    - `host.json` - configuration of the function host
-
-1. Open [`functions/hello_world.ts`](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/hello_world.ts) to see a basic HTTP triggered function.
-
-1. Then take a look at [`worker.ts`](https://github.com/anthonychu/azure-functions-deno-template/blob/master/worker.ts) to see how the `hello_world` function is added to the Deno Azure Functions worker.
+    - [`functions/hello_world.ts`](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/hello_world.ts) - a basic HTTP triggered function
+    - [`worker.ts`](https://github.com/anthonychu/azure-functions-deno-template/blob/master/worker.ts) - the Deno worker used by Azure Functions
+    - [`host.json`](https://github.com/anthonychu/azure-functions-deno-template/blob/master/host.json) - configuration of the function host
 
 1. Run the app locally:
 
@@ -68,7 +64,9 @@ deno install --allow-run --allow-read --allow-write --allow-net --unstable --nam
     denofunc start
     ```
 
-    A folder is generated for the `hello_world` function containing a file named `function.json` that is used by the Azure Functions runtime to load the function (the are ignored in `.gitnore`). The Azure Functions Core Tools (`func`) is then used to run the function app.
+    The Azure Functions Core Tools (`func`) is then called to run the function app.
+
+    > Note: A folder is automatically generated for the `hello_world` function containing a file named `function.json` that is used by the Azure Functions runtime to load the function (they are ignored in `.gitnore`).
 
 1. Open the URL displayed on the screen (http://localhost:7071/api/hello_world) to run the function.
 
@@ -81,7 +79,7 @@ Now that you've run the function app locally, it's time to deploy it to Azure!
 1. Configure some variables (examples are in bash):
 
     ```bash
-    region=centralus
+    region=centralus # any region where Linux Azure Functions are available
     resourceGroupName=<resource_group_name>
     functionAppName=<function_app_name>
     storageName=<storage_name> # must be between 3 and 24 characters in length and may contain numbers and lowercase letters only.
