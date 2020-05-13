@@ -40,7 +40,7 @@ For more information, try the [quickstart](#getting-started) below.
 
 All Azure Functions [triggers and bindings](https://docs.microsoft.com/azure/azure-functions/functions-triggers-bindings) (including custom bindings) are supported.
 
-In this simplified programming model, functions are a single file. Here are a couple of examples:
+In this simplified programming model, each function is a single file. Here are a couple of examples:
 * [HTTP trigger](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/hello_world.ts)
 * [Queue trigger](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/queue_trigger.ts)
 
