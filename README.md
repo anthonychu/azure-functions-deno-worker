@@ -48,8 +48,7 @@ Check out the [new project template](https://github.com/anthonychu/azure-functio
 
 ## Prerequisites
 
-> Note: Currently, this has only been tested to run locally on macOS. It should run on Linux and Windows as well, but needs to be verified.
-
+* Linux or macOS (on Windows, use WSL)
 * [Deno](https://deno.land/x/install/) - `1.0.0-rc3` or above
 * [Azure Functions Core Tools V3](https://github.com/Azure/azure-functions-core-tools#azure-functions-core-tools) - needed for running the app locally and deploying it
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
