@@ -25,7 +25,7 @@ The project includes a CLI `denofunc` to make it easy to create, run, and deploy
 
 > Note: Currently, this has only been tested to run locally on macOS. It should run on Linux and Windows as well, but needs to be verified.
 
-* [Deno](https://deno.land/x/install/) - 1.0.0-rc2 or above
+* [Deno](https://deno.land/x/install/) - `1.0.0-rc3` or above
 * [Azure Functions Core Tools V3](https://github.com/Azure/azure-functions-core-tools#azure-functions-core-tools) - needed for running the app locally and deploying it
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
 * `denofunc` CLI - see [below](#install-the-denofunc-cli)
@@ -37,8 +37,8 @@ To help create, run, and deploy a Deno for Azure Functions app, you need to inst
 To install the CLI, run the following Deno command.
 
 ```bash
-deno install --allow-run --allow-read --allow-write --allow-net --unstable --name=denofunc \
-    https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/master/denofunc.ts
+deno install --allow-run --allow-read --allow-write --allow-net --unstable --force \
+    --name=denofunc https://deno.land/x/azure_functions/denofunc.ts
 ```
 
 ## Getting started
@@ -118,4 +118,4 @@ Now that you've run the function app locally, it's time to deploy it to Azure!
 
 ---
 
-> **Disclaimer:** This is a community open source project. No official support is provided by Microsoft.
+*Disclaimer: This is a community open source project. No official support is provided by Microsoft.*
