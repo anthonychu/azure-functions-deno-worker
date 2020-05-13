@@ -21,6 +21,31 @@ This is a worker that lets you run Deno on [Azure Functions](https://docs.micros
 
 The project includes a CLI `denofunc` to make it easy to create, run, and deploy your Deno Azure Functions apps.
 
+### 3 commands to get started
+
+```bash
+# initialize function app
+denofunc init
+
+# run function app locally
+denofunc start
+
+# deploy the app
+denofunc publish $functionAppName
+```
+
+For more information, try the [quickstart](#getting-started) below.
+
+### Simplified programming model
+
+All Azure Functions [triggers and bindings](https://docs.microsoft.com/azure/azure-functions/functions-triggers-bindings) (including custom bindings) are supported.
+
+In this simplified programming model, functions are a single file. Here are a couple of examples:
+* [HTTP trigger](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/hello_world.ts)
+* [Queue trigger](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/queue_trigger.ts)
+
+Check out the [new project template](https://github.com/anthonychu/azure-functions-deno-template) for the entire app structure.
+
 ## Prerequisites
 
 > Note: Currently, this has only been tested to run locally on macOS. It should run on Linux and Windows as well, but needs to be verified.
