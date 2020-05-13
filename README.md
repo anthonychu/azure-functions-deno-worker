@@ -1,4 +1,4 @@
-# Deno Worker for Azure Functions
+# Deno worker for Azure Functions
 
 ```
            @@@@@@@@@@@,         
