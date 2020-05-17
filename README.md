@@ -17,9 +17,11 @@
 
 ## Overview
 
-<a href="https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template">
-    <img src="https://img.shields.io/endpoint?style=social&url=https%3A%2F%2Faka.ms%2Fvso-badge">
-</a>
+<p>
+    <a href="https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template">
+        <img src="https://img.shields.io/endpoint?style=social&url=https%3A%2F%2Faka.ms%2Fvso-badge">
+    </a>
+</p>
 
 This is a worker that lets you run Deno on [Azure Functions](https://docs.microsoft.com/azure/azure-functions/functions-overview). It implements the [Azure Functions Custom Handlers](https://docs.microsoft.com/azure/azure-functions/functions-custom-handlers) protocol and runs on the Azure Functions Consumption (serverless) plan.
 
@@ -60,7 +62,7 @@ Check out the [new project template](https://github.com/anthonychu/azure-functio
 
 You can also get a preconfigured, cloud-based dev environment from Visual Studio Codespaces. (GitHub Codespaces support coming soon!)
 
-[![Open in Visual Studio Codespaces](https://img.shields.io/endpoint?style=social&url=https%3A%2F%2Faka.ms%2Fvso-badge)](https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template)
+[Open in Visual Studio Codespaces](https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template)
 
 ### Install the denofunc CLI
 
