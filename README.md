@@ -124,6 +124,9 @@ Now that you've run the function app locally, it's time to deploy it to Azure!
 1. Run these Azure CLI commands to create and configure the function app:
 
     ```bash
+    # Log in to the Azure CLI
+    az login
+
     # Create resource group
     az group create -l $region -n $resourceGroupName
 
