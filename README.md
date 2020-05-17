@@ -17,7 +17,9 @@
 
 ## Overview
 
-[![Open in Visual Studio Codespaces](https://img.shields.io/endpoint?style=social&url=https%3A%2F%2Faka.ms%2Fvso-badge)](https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template)
+<a href="https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template">
+    <img src="https://img.shields.io/endpoint?style=social&url=https%3A%2F%2Faka.ms%2Fvso-badge">
+</a>
 
 This is a worker that lets you run Deno on [Azure Functions](https://docs.microsoft.com/azure/azure-functions/functions-overview). It implements the [Azure Functions Custom Handlers](https://docs.microsoft.com/azure/azure-functions/functions-custom-handlers) protocol and runs on the Azure Functions Consumption (serverless) plan.
 
