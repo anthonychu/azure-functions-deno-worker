@@ -60,7 +60,11 @@ async function downloadBinary() {
         const zip = await readZip(binZipPath);
 
         await zip.unzip(binDir);
-        await Deno.chmod(binPath, 0o755)
+
+        if (Deno.build.os !== "windows") {
+            await Deno.chmod(binPath, 0o755)
+        }
+        
         await Deno.remove(binZipPath);
         console.info(`Downloaded deno binary at: ${await Deno.realPath(binPath)}`);
     }
