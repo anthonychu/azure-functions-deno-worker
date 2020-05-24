@@ -125,12 +125,18 @@ Now that you've run the function app locally, it's time to deploy it to Azure!
     storageName=<storage_name> # must be between 3 and 24 characters in length and may contain numbers and lowercase letters only.
     ```
 
-1. Run these Azure CLI commands to create and configure the function app:
+1. If you are not authenticated with the Azure CLI, log in.
 
     ```bash
     # Log in to the Azure CLI
     az login
+    ```
 
+    This might not work in some environments (e.g. Codespaces). Try `az login --use-device-code` instead.
+
+1. Run these Azure CLI commands to create and configure the function app:
+
+    ```bash
     # Create resource group
     az group create -l $region -n $resourceGroupName
 
