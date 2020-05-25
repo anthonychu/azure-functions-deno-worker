@@ -52,7 +52,9 @@ In this simplified programming model, each function is a single file. Here are a
 
 Check out the [new project template](https://github.com/anthonychu/azure-functions-deno-template) for the entire app structure.
 
-## Prerequisites
+## Getting started - building a Deno function app
+
+### Requirements
 
 * Linux, macOS, Windows
 * [Deno](https://deno.land/x/install/) - `1.0.2` (other versions may not work)
@@ -60,11 +62,12 @@ Check out the [new project template](https://github.com/anthonychu/azure-functio
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
 * `denofunc` CLI - see [below](#install-the-denofunc-cli)
 
-You can also get a preconfigured, cloud-based dev environment from Visual Studio Codespaces. (GitHub Codespaces support coming soon!)
+> You can also get a preconfigured, cloud-based dev environment from Codespaces:
+> 
+> * Visual Studio Codespaces - [click to create](https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template)
+> * GitHub Codespaces ([private preview](https://github.com/features/codespaces)) - [go to the template repo](https://github.com/anthonychu/azure-functions-deno-template) and create a Codespace
 
-[Open in Visual Studio Codespaces](https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template)
-
-### Install the denofunc CLI
+#### Install the denofunc CLI
 
 To help create, run, and deploy a Deno for Azure Functions app, you need to install the `denofunc` CLI. `denofunc` wraps the Azure Functions Core Tools (`func`) and is used for generating artifacts required to run/deploy the app.
 
@@ -80,8 +83,6 @@ Confirm it is installed correctly:
 ```bash
 denofunc --help
 ```
-
-## Getting started
 
 ### Create and run an app locally
 
