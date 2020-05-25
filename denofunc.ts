@@ -122,9 +122,13 @@ async function generateFunctions() {
 
 async function runFunc(...args: string[]) {
     let cmd = ["func", ...args];
+    const env = {
+        "logging__logLevel__Microsoft": "warning",
+        "logging__logLevel__Worker": "warning"
+    };
     try {
         console.info(`Running Azure Functions Core Tools: ${cmd.join(" ")}`);
-        const proc = Deno.run({ cmd });
+        const proc = Deno.run({ cmd, env });
         await proc.status();
     } catch (ex) {
         if (Deno.build.os === "windows") {
@@ -140,7 +144,7 @@ async function runFunc(...args: string[]) {
             if (funcPath) {
                 cmd = [funcPath, ...args];
                 console.info(`Running Azure Functions Core Tools: ${cmd.join(" ")}`);
-                const proc = Deno.run({ cmd });
+                const proc = Deno.run({ cmd, env });
                 await proc.status();
             } else {
                 throw "Could not located func. Please ensure it is installed and in the path.";
