@@ -123,7 +123,7 @@ async function generateFunctions() {
 async function runFunc(...args: string[]) {
     let cmd = ["func", ...args];
     try {
-        console.info(`Starting Azure Functions Core Tools: ${cmd.join(" ")}`);
+        console.info(`Running Azure Functions Core Tools: ${cmd.join(" ")}`);
         const proc = Deno.run({ cmd });
         await proc.status();
     } catch (ex) {
@@ -139,7 +139,7 @@ async function runFunc(...args: string[]) {
             const funcPath = new TextDecoder().decode(rawOutput).split(/\r?\n/).find(p => p.endsWith("func.cmd"));
             if (funcPath) {
                 cmd = [funcPath, ...args];
-                console.info(`Starting Azure Functions Core Tools: ${cmd.join(" ")}`);
+                console.info(`Running Azure Functions Core Tools: ${cmd.join(" ")}`);
                 const proc = Deno.run({ cmd });
                 await proc.status();
             } else {
@@ -152,10 +152,7 @@ async function runFunc(...args: string[]) {
 }
 
 async function publishApp(appName: string) {
-    const cmd = ["func", "azure", "functionapp", "publish", appName, "--no-build", "-b", "local", "--force"];
-    console.info(`Publishing app: ${cmd.join(" ")}`);
-    const proc = Deno.run({ cmd });
-    await proc.status();
+    await runFunc("azure", "functionapp", "publish", appName, "--no-build", "-b", "local", "--force");
 }
 
 function printLogo() {
