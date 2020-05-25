@@ -121,17 +121,42 @@ async function generateFunctions() {
 }
 
 async function runFunc(...args: string[]) {
-    const cmd = ["func", ...args];
-    console.info(`Starting Azure Functions Core Tools: ${cmd.join(" ")}`);
-    const proc = Deno.run({ cmd });
-    await proc.status();
+    let cmd = ["func", ...args];
+    const env = {
+        "logging__logLevel__Microsoft": "warning",
+        "logging__logLevel__Worker": "warning"
+    };
+    try {
+        console.info(`Running Azure Functions Core Tools: ${cmd.join(" ")}`);
+        const proc = Deno.run({ cmd, env });
+        await proc.status();
+    } catch (ex) {
+        if (Deno.build.os === "windows") {
+            console.info("Could not start func from path, searching for executable...")
+            cmd = ["where.exe", "func"];
+            const proc = Deno.run({
+                cmd,
+                stdout: "piped"
+            });
+            await proc.status();
+            const rawOutput = await proc.output();
+            const funcPath = new TextDecoder().decode(rawOutput).split(/\r?\n/).find(p => p.endsWith("func.cmd"));
+            if (funcPath) {
+                cmd = [funcPath, ...args];
+                console.info(`Running Azure Functions Core Tools: ${cmd.join(" ")}`);
+                const proc = Deno.run({ cmd, env });
+                await proc.status();
+            } else {
+                throw "Could not located func. Please ensure it is installed and in the path.";
+            }
+        } else {
+            throw ex;
+        }
+    }
 }
 
 async function publishApp(appName: string) {
-    const cmd = ["func", "azure", "functionapp", "publish", appName, "--no-build", "-b", "local", "--force"];
-    console.info(`Publishing app: ${cmd.join(" ")}`);
-    const proc = Deno.run({ cmd });
-    await proc.status();
+    await runFunc("azure", "functionapp", "publish", appName, "--no-build", "-b", "local", "--force");
 }
 
 function printLogo() {
