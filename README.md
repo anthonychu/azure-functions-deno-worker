@@ -1,4 +1,4 @@
-# Deno worker for Azure Functions
+# Deno for Azure Functions
 
 ```
            @@@@@@@@@@@,         
@@ -23,7 +23,7 @@
     </a>
 </p>
 
-This is a worker that lets you run Deno on [Azure Functions](https://docs.microsoft.com/azure/azure-functions/functions-overview). It implements the [Azure Functions Custom Handlers](https://docs.microsoft.com/azure/azure-functions/functions-custom-handlers) protocol and runs on the Azure Functions Consumption (serverless) plan.
+This is a worker that lets you run Deno on [Azure Functions](https://docs.microsoft.com/azure/azure-functions/functions-overview). It is implemented as an [Azure Functions Custom Handler](https://docs.microsoft.com/azure/azure-functions/functions-custom-handlers) and runs on the Azure Functions Consumption (serverless) plan.
 
 The project includes a CLI `denofunc` to make it easy to create, run, and deploy your Deno Azure Functions apps.
 
