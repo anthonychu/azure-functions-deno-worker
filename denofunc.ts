@@ -1,5 +1,6 @@
 const { args } = Deno;
 import { parse, readZip, ensureDir, move, walk } from "./deps.ts";
+import { readJson, writeJson } from "https://deno.land/std/fs/mod.ts";
 
 const parsedArgs = parse(Deno.args);
 
@@ -16,7 +17,9 @@ if (args.length === 1 && args[0] === "init") {
     await createJSBundle();
     await runFunc("start");
 } else if (args.length === 2 && args[0] === "publish") {
-    await downloadBinary();
+    const platform = await getAppPlatform(args[1]);
+    updateHostJson(platform);
+    await downloadBinary(platform);
     await generateFunctions();
     await createJSBundle();
     await publishApp(args[1]);
@@ -33,6 +36,20 @@ async function fileExists(path: string) {
     }
 }
 
+async function listFiles(dir:string):Promise<string[]> {
+    const files:string[] = [];
+    for await (const dirEntry of Deno.readDir(dir)) {
+        files.push(`${dir}/${dirEntry.name}`);
+        if (!dirEntry.isDirectory) continue;
+
+        (await listFiles(`${dir}/${dirEntry.name}`)).forEach((s) => {
+            files.push(s);
+        });
+    }
+    return files;
+}
+  
+
 async function createJSBundle() {
     const bundleFileName = "worker.bundle.js";
     const cmd = ["deno", "bundle", "--unstable", "worker.ts", bundleFileName];
@@ -41,13 +58,56 @@ async function createJSBundle() {
     await generateProcess.status();
 }
 
-async function downloadBinary() {
-    const binDir = "./bin/linux";
-    const binPath = `${binDir}/deno`;
-    const binZipPath = `${binDir}/deno.zip`;
+async function getAppPlatform(appName: string): Promise<string> {
+    console.info(`Checking platform type of : ${appName} ...`);
+    const azResourceCmd = ["az", "resource", "list", "--resource-type", "Microsoft.web/sites"];
+    const azResourceProcess = Deno.run({ cmd: azResourceCmd, stdout: "piped" });
+    const resources = JSON.parse(new TextDecoder().decode(await azResourceProcess.output()));
+    azResourceProcess.close();
+    try {
+        const id = resources.filter((resource:any) => resource.name === appName)[0].id;
+        const azFunctionCmd = ["az", "functionapp", "config", "show", "--ids", id];
+        const azFunctionProcess = Deno.run({ cmd: azFunctionCmd, stdout: "piped" });
+        const config = JSON.parse(new TextDecoder().decode(await azFunctionProcess.output()));
+        azFunctionProcess.close();
+        return !config.linuxFxVersion ? "windows" : "linux";
+    } catch {
+        throw new Error(`Not found: ${appName}`);
+    }
+}
 
+async function updateHostJson(platform: string) {
+    // update `defaultExecutablePath` in host.json
+    const hostJsonPath:string = "./host.json";
+    if (!(await fileExists(hostJsonPath))) throw new Error(`\`${hostJsonPath}\` not found`)
+
+    const hostJSON:any = await readJson(hostJsonPath);
+    hostJSON.httpWorker.description.defaultExecutablePath = 
+    platform === "windows" ? "D:\\home\\site\\wwwroot\\bin\\linux\\deno.exe" : "/home/site/wwwroot/bin/linux/deno",
+    await writeJson(hostJsonPath, hostJSON, { spaces: 2 }); // returns a promise
+}
+
+async function downloadBinary(platform: string) {
+    const binDir = `./bin/${platform}`;
+    const binPath = `${binDir}/deno${platform === "windows" ? ".exe" : ""}`;
+    const archive:any = {
+        "windows": "pc-windows-msvc",
+        "linux": "unknown-linux-gnu"
+    };
+
+    // remove unnecessary files/dirs in "./bin"
+    const entries = (await listFiles("./bin")).filter((entry) => {
+        return !binPath.startsWith(entry);
+    }).sort((str1, str2) => {
+        return str1.length < str2.length ? 1:-1
+    });
+    for (const entry of entries) {
+       await Deno.remove(entry);
+    }
+      
+    const binZipPath = `${binDir}/deno.zip`;
     if (!(await fileExists(binPath))) {
-        const downloadUrl = `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-unknown-linux-gnu.zip`;
+        const downloadUrl = `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-${archive[platform]}.zip`;
         console.info(`Downloading deno binary from: ${downloadUrl} ...`);
         // download deno binary (that gets deployed to Azure)
         const response = await fetch(downloadUrl);
