@@ -63,10 +63,12 @@ Check out the [new project template](https://github.com/anthonychu/azure-functio
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
 * `denofunc` CLI - see [below](#install-the-denofunc-cli)
 
+> #### Codespaces
+>
 > You can also get a preconfigured, cloud-based dev environment from Codespaces:
 > 
-> * Visual Studio Codespaces - [click to create](https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template)
-> * GitHub Codespaces ([private preview](https://github.com/features/codespaces)) - [go to the template repo](https://github.com/anthonychu/azure-functions-deno-template) and create a Codespace
+> * **Visual Studio Codespaces** - [click to create](https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template)
+> * **GitHub Codespaces** ([private preview](https://github.com/features/codespaces)) - [go to the template repo](https://github.com/anthonychu/azure-functions-deno-template) and create a Codespace
 
 #### Install the denofunc CLI
 
