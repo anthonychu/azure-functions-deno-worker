@@ -19,7 +19,7 @@
 
 <p>
     <a href="https://online.visualstudio.com/environments/new?name=Deno%20Azure%20Functions&repo=anthonychu/azure-functions-deno-template">
-        <img src="https://img.shields.io/endpoint?style=social&url=https%3A%2F%2Faka.ms%2Fvso-badge">
+        <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Faka.ms%2Fvso-badge">
     </a>
 </p>
 
