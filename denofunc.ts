@@ -323,6 +323,6 @@ denofunc start
     Generate functions artifacts and start Azure Functions Core Tools
 
 denofunc publish <function_app_name>
-    Publish to Azure (Linux Consumption plan only)
+    Publish to Azure
     `);
 }

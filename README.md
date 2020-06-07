@@ -57,8 +57,8 @@ Check out the [new project template](https://github.com/anthonychu/azure-functio
 ### Requirements
 
 * Linux, macOS, Windows
-* [Deno](https://deno.land/x/install/) - `1.0.2` (other versions may not work)
-    - `1.0.3` has a [bug in the bundler](https://github.com/denoland/deno/issues/5960) and will not work
+* [Deno](https://deno.land/x/install/)
+    - Tested on: `1.0.2`, `1.0.4`, `1.0.5`
 * [Azure Functions Core Tools V3](https://github.com/Azure/azure-functions-core-tools#azure-functions-core-tools) - needed for running the app locally and deploying it
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
 * `denofunc` CLI - see [below](#install-the-denofunc-cli)
@@ -147,14 +147,10 @@ Now that you've run the function app locally, it's time to deploy it to Azure!
     # Create storage account needed by function app
     az storage account create -n $storageName -l $region -g $resourceGroupName --sku Standard_LRS
 
-    # Create function app
+    # Create function app (also works on Windows)
     az functionapp create -n $functionAppName --storage-account $storageName \
         --consumption-plan-location $region -g $resourceGroupName \
         --functions-version 3 --runtime dotnet --os-type Linux
-
-    # Set app settings:
-    # - WEBSITE_MOUNT_ENABLED=1 enables squashfs which correctly sets the execute bit on the deno binary
-    az functionapp config appsettings set -n $functionAppName -g $resourceGroupName --settings "WEBSITE_MOUNT_ENABLED=1"
     ```
 
 1. Deploy the app:
