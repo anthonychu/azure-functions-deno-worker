@@ -86,10 +86,16 @@ async function getAppPlatform(appName: string): Promise<string> {
     "-o",
     "json",
   ];
-  const azResourceOutput = await runWithRetry({ cmd: azResourceCmd, stdout: "piped" }, "az.cmd");
+  const azResourceProcess = await runWithRetry(
+    { cmd: azResourceCmd, stdout: "piped" },
+    "az.cmd",
+  );
+  const azResourceOutput = await azResourceProcess.output();
   const resources = JSON.parse(
     new TextDecoder().decode(azResourceOutput),
   );
+  azResourceProcess.close();
+
   try {
     const id = resources.filter((resource: any) =>
       resource.name === appName
@@ -104,10 +110,15 @@ async function getAppPlatform(appName: string): Promise<string> {
       "-o",
       "json",
     ];
-    const azFunctionOutput = await runWithRetry({ cmd: azFunctionCmd, stdout: "piped" }, "az.cmd");
+    const azFunctionProcess = await runWithRetry(
+      { cmd: azFunctionCmd, stdout: "piped" },
+      "az.cmd",
+    );
+    const azFunctionOutput = await azFunctionProcess.output();
     const config = JSON.parse(
       new TextDecoder().decode(azFunctionOutput),
     );
+    azFunctionProcess.close();
     return !config.linuxFxVersion ? "windows" : "linux";
   } catch {
     throw new Error(`Not found: ${appName}`);
@@ -242,23 +253,24 @@ async function runFunc(...args: string[]) {
     "logging__logLevel__Worker": "warning",
   };
 
-  await runWithRetry({ cmd, env }, "func.cmd");
+  const proc = await runWithRetry({ cmd, env }, "func.cmd");
+  await proc.status();
+  proc.close();
 }
 
-async function runWithRetry(runOptions: Deno.RunOptions, backupCommand: string) {
+async function runWithRetry(
+  runOptions: Deno.RunOptions,
+  backupCommand: string,
+) {
   try {
-    const proc = Deno.run(runOptions);
     console.info(`Running command: ${runOptions.cmd.join(" ")}`);
-    if (runOptions.stdout === "piped") {
-      return await proc.output();
-    } else {
-      await proc.status();
-      return;
-    }
+    return Deno.run(runOptions);
   } catch (ex) {
     if (Deno.build.os === "windows") {
       console.info(
-        `Could not start ${runOptions.cmd[0]} from path, searching for executable...`,
+        `Could not start ${
+          runOptions.cmd[0]
+        } from path, searching for executable...`,
       );
       const whereCmd = ["where.exe", backupCommand];
       const proc = Deno.run({
@@ -268,21 +280,15 @@ async function runWithRetry(runOptions: Deno.RunOptions, backupCommand: string) 
       await proc.status();
       const rawOutput = await proc.output();
       const newPath = new TextDecoder().decode(rawOutput).split(/\r?\n/).find(
-        (p) => p.endsWith(backupCommand)
+        (p) => p.endsWith(backupCommand),
       );
       if (newPath) {
         const newCmd = [...runOptions.cmd];
         newCmd[0] = newPath;
-        const newOptions = {...runOptions};
+        const newOptions = { ...runOptions };
         newOptions.cmd = newCmd;
         console.info(`Running command: ${newOptions.cmd.join(" ")}`);
-        const proc = Deno.run(newOptions);
-        if (runOptions.stdout === "piped") {
-          return await proc.output();
-        } else {
-          await proc.status();
-          return;
-        }
+        return Deno.run(newOptions);
       } else {
         throw `Could not locate ${backupCommand}. Please ensure it is installed and in the path.`;
       }
