@@ -44,15 +44,15 @@ async function directoryExists(path: string) {
     }
 }
 
-async function listFiles(dir:string):Promise<string[]> {
-    const files:string[] = [];
+async function listFiles(dir: string) {
+    const files: string[] = [];
     for await (const dirEntry of Deno.readDir(dir)) {
         files.push(`${dir}/${dirEntry.name}`);
-        if (!dirEntry.isDirectory) continue;
-
-        (await listFiles(`${dir}/${dirEntry.name}`)).forEach((s) => {
-            files.push(s);
-        });
+        if (dirEntry.isDirectory) {
+            (await listFiles(`${dir}/${dirEntry.name}`)).forEach((s) => {
+                files.push(s);
+            });
+        }
     }
     return files;
 }
@@ -85,10 +85,10 @@ async function getAppPlatform(appName: string): Promise<string> {
 
 async function updateHostJson(platform: string) {
     // update `defaultExecutablePath` in host.json
-    const hostJsonPath:string = "./host.json";
+    const hostJsonPath = "./host.json";
     if (!(await fileExists(hostJsonPath))) throw new Error(`\`${hostJsonPath}\` not found`)
 
-    const hostJSON:any = await readJson(hostJsonPath);
+    const hostJSON: any = await readJson(hostJsonPath);
     hostJSON.httpWorker.description.defaultExecutablePath = 
         platform === "windows" ? "D:\\home\\site\\wwwroot\\bin\\windows\\deno.exe" : "/home/site/wwwroot/bin/linux/deno",
     await writeJson(hostJsonPath, hostJSON, { spaces: 2 }); // returns a promise
@@ -97,18 +97,16 @@ async function updateHostJson(platform: string) {
 async function downloadBinary(platform: string) {
     const binDir = `./bin/${platform}`;
     const binPath = `${binDir}/deno${platform === "windows" ? ".exe" : ""}`;
-    const archive:any = {
+    const archive: any = {
         "windows": "pc-windows-msvc",
         "linux": "unknown-linux-gnu"
     };
 
     // remove unnecessary files/dirs in "./bin"
     if (await directoryExists("./bin")) {
-        const entries = (await listFiles("./bin")).filter((entry) => {
-            return !binPath.startsWith(entry);
-        }).sort((str1, str2) => {
-            return str1.length < str2.length ? 1 : -1;
-        });
+        const entries = (await listFiles("./bin"))
+            .filter((entry) => !binPath.startsWith(entry))
+            .sort((str1, str2) => str1.length < str2.length ? 1 : -1);
         for (const entry of entries) {
            await Deno.remove(entry);
         }
