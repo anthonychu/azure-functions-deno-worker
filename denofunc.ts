@@ -1,6 +1,5 @@
 const { args } = Deno;
-import { parse, readZip, ensureDir, move, walk } from "./deps.ts";
-import { readJson, writeJson } from "https://deno.land/std@0.53.0/fs/mod.ts";
+import { parse, readZip, ensureDir, move, walk, readJson, writeJson } from "./deps.ts";
 
 const parsedArgs = parse(Deno.args);
 
