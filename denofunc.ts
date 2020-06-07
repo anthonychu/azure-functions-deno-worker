@@ -1,6 +1,6 @@
 const { args } = Deno;
 import { parse, readZip, ensureDir, move, walk } from "./deps.ts";
-import { readJson, writeJson } from "https://deno.land/std/fs/mod.ts";
+import { readJson, writeJson } from "https://deno.land/std@0.53.0/fs/mod.ts";
 
 const parsedArgs = parse(Deno.args);
 
@@ -36,6 +36,15 @@ async function fileExists(path: string) {
     }
 }
 
+async function directoryExists(path: string) {
+    try {
+        const f = await Deno.lstat(path);
+        return f.isDirectory;
+    } catch {
+        return false;
+    }
+}
+
 async function listFiles(dir:string):Promise<string[]> {
     const files:string[] = [];
     for await (const dirEntry of Deno.readDir(dir)) {
@@ -48,7 +57,6 @@ async function listFiles(dir:string):Promise<string[]> {
     }
     return files;
 }
-  
 
 async function createJSBundle() {
     const bundleFileName = "worker.bundle.js";
@@ -60,13 +68,13 @@ async function createJSBundle() {
 
 async function getAppPlatform(appName: string): Promise<string> {
     console.info(`Checking platform type of : ${appName} ...`);
-    const azResourceCmd = ["az", "resource", "list", "--resource-type", "Microsoft.web/sites"];
+    const azResourceCmd = ["az", "resource", "list", "--resource-type", "Microsoft.web/sites", "-o", "json"];
     const azResourceProcess = Deno.run({ cmd: azResourceCmd, stdout: "piped" });
     const resources = JSON.parse(new TextDecoder().decode(await azResourceProcess.output()));
     azResourceProcess.close();
     try {
         const id = resources.filter((resource:any) => resource.name === appName)[0].id;
-        const azFunctionCmd = ["az", "functionapp", "config", "show", "--ids", id];
+        const azFunctionCmd = ["az", "functionapp", "config", "show", "--ids", id, "-o", "json"];
         const azFunctionProcess = Deno.run({ cmd: azFunctionCmd, stdout: "piped" });
         const config = JSON.parse(new TextDecoder().decode(await azFunctionProcess.output()));
         azFunctionProcess.close();
@@ -83,7 +91,7 @@ async function updateHostJson(platform: string) {
 
     const hostJSON:any = await readJson(hostJsonPath);
     hostJSON.httpWorker.description.defaultExecutablePath = 
-    platform === "windows" ? "D:\\home\\site\\wwwroot\\bin\\linux\\deno.exe" : "/home/site/wwwroot/bin/linux/deno",
+        platform === "windows" ? "D:\\home\\site\\wwwroot\\bin\\windows\\deno.exe" : "/home/site/wwwroot/bin/linux/deno",
     await writeJson(hostJsonPath, hostJSON, { spaces: 2 }); // returns a promise
 }
 
@@ -96,15 +104,17 @@ async function downloadBinary(platform: string) {
     };
 
     // remove unnecessary files/dirs in "./bin"
-    const entries = (await listFiles("./bin")).filter((entry) => {
-        return !binPath.startsWith(entry);
-    }).sort((str1, str2) => {
-        return str1.length < str2.length ? 1:-1
-    });
-    for (const entry of entries) {
-       await Deno.remove(entry);
+    if (await directoryExists("./bin")) {
+        const entries = (await listFiles("./bin")).filter((entry) => {
+            return !binPath.startsWith(entry);
+        }).sort((str1, str2) => {
+            return str1.length < str2.length ? 1 : -1;
+        });
+        for (const entry of entries) {
+           await Deno.remove(entry);
+        }
     }
-      
+
     const binZipPath = `${binDir}/deno.zip`;
     if (!(await fileExists(binPath))) {
         const downloadUrl = `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-${archive[platform]}.zip`;
