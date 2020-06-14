@@ -6,5 +6,7 @@ export {
   walk,
   readJson,
   writeJson,
+  readFileStr,
+  writeFileStr,
 } from "https://deno.land/std@0.56.0/fs/mod.ts";
 export * from "./worker_deps.ts";

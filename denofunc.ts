@@ -7,6 +7,8 @@ import {
   walk,
   readJson,
   writeJson,
+  readFileStr,
+  writeFileStr,
 } from "./deps.ts";
 
 const parsedArgs = parse(Deno.args);
@@ -15,6 +17,8 @@ if (parsedArgs["help"]) {
   printHelp();
   Deno.exit();
 }
+
+const cacheDir = `${Deno.cwd()}/.cache`;
 
 if (args.length === 1 && args[0] === "init") {
   await initializeFromTemplate();
@@ -27,11 +31,12 @@ if (args.length === 1 && args[0] === "init") {
   await runFunc("start");
 } else if (args.length === 2 && args[0] === "publish") {
   const platform = await getAppPlatform(args[1]);
-  updateHostJson(platform);
-  await downloadBinary(platform);
+  // updateHostJson(platform);
+  // await downloadBinary(platform);
   await generateFunctions();
-  await createJSBundle();
-  await publishApp(args[1]);
+  // await createJSBundle();
+  await cacheDependencies(platform);
+  // await publishApp(args[1]);
 } else {
   printHelp();
 }
@@ -119,6 +124,33 @@ async function getAppPlatform(appName: string): Promise<string> {
       new TextDecoder().decode(azFunctionOutput),
     );
     azFunctionProcess.close();
+
+    // update app setting `DENO_DIR` settings for cache files
+    const azFunctionSettingCmd = [
+      "az",
+      "functionapp",
+      "config",
+      "appsettings",
+      "set",
+      "--ids",
+      id,
+      "-o",
+      "json",
+      "--settings",
+    ];
+    if (!config.linuxFxVersion) {
+      azFunctionSettingCmd.push("DENO_DIR=D:\\home\\site\\wwwroot\\.cache");
+    } else {
+      azFunctionSettingCmd.push("DENO_DIR=/home/site/wwwroot/.cache");
+    }
+
+    const azFunctionSettingProcess = await runWithRetry(
+      { cmd: azFunctionSettingCmd, stdout: "piped" },
+      "az.cmd",
+    );
+    await azFunctionSettingProcess.output();
+    azFunctionSettingProcess.close();
+
     return !config.linuxFxVersion ? "windows" : "linux";
   } catch {
     throw new Error(`Not found: ${appName}`);
@@ -230,6 +262,9 @@ async function initializeFromTemplate() {
 
 async function generateFunctions() {
   console.info("Generating functions...");
+  try {
+    await Deno.remove(cacheDir, {recursive: true});
+  } catch {}
   const generateProcess = Deno.run({
     cmd: [
       "deno",
@@ -241,9 +276,62 @@ async function generateFunctions() {
       "--unstable",
       "worker.ts",
     ],
-    env: { "DENOFUNC_GENERATE": "1" },
+    env: {
+      "DENOFUNC_GENERATE": "1",
+      "DENO_DIR": cacheDir // specify output dir
+    },
   });
   await generateProcess.status();
+}
+
+async function cacheDependencies(platform: string) {
+  const paths = {
+      from: Deno.cwd().replace(/\\/g, '\\\\') as string,
+      to: {
+        metafile: platform === 'windows' ? 'D:\\\\home\\\\site\\\\wwwroot' : '/home/site/wwwroot',
+        others: platform === 'windows' ? '/D:/home/site/wwwroot' : '/home/site/wwwroot'
+      }
+  }
+  const cachefiles = [];
+  // remove files contained in worker.ts.* from cache dir
+  for await (const w of walk(`${Deno.cwd()}/.cache/gen/file`, {includeDirs: false})) {
+    if (w.path.match(/[\\\/]worker\.ts.*$/)) {
+      await Deno.remove(w.path);
+      continue;
+    }
+    cachefiles.push(w.path);
+  }
+
+  // replace path in cached files
+  for (const cachefile of cachefiles) {
+    const content = await readFileStr(cachefile);
+    const updated = cachefile.endsWith('.meta')
+      ? content.replace(new RegExp(paths.from.replace(/\\/g, '\\\\'), 'g'), paths.to.metafile).replace(/\\\\/g, () => platform === 'windows' ? '\\\\' : '/')
+      : content.replace(new RegExp(`/${paths.from.replace(/\\\\/g, '/')}`, 'g'), paths.to.others);
+    await writeFileStr(cachefile, updated || '');
+  };
+
+  // move cached files to following dir
+  //   windows: .cache/gen/file/D/home/site/wwwroot/
+  //   linux: .cache/gen/file/home/site/wwwroot/
+  const remoteCacheDir = `${cacheDir}/gen/file${paths.to.others.replace(/:/g, '')}`;
+  try {
+    await Deno.lstat(remoteCacheDir);
+  } catch {
+    await Deno.mkdir(remoteCacheDir, {recursive: true});
+  }
+  await move(`${cacheDir}/gen/file/${Deno.cwd().replace(/:/g, '')}`, remoteCacheDir, { overwrite: true });
+
+  // remove empty dirs in ./.cache/gen/file/PATH/TO/WORK_DIR
+  let removeDir = `${cacheDir}/gen/file/${Deno.cwd().replace(/:/g, '')}`.replace(/[\\/][^\\/]+$/, '');
+  while (true) {
+    try {
+      await Deno.remove(removeDir);
+      removeDir = removeDir.replace(/[\\/][^\\/]+$/, '');
+    } catch {
+      break;
+    }
+  }
 }
 
 async function runFunc(...args: string[]) {
