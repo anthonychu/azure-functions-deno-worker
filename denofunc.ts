@@ -30,13 +30,13 @@ if (args.length === 1 && args[0] === "init") {
   await createJSBundle();
   await runFunc("start");
 } else if (args.length === 2 && args[0] === "publish") {
-  const platform = await getAppPlatform(args[1]);
-  // updateHostJson(platform);
-  // await downloadBinary(platform);
+  const { platform, id } = await getAppPlatform(args[1]);
+  updateHostJson(platform);
+  await downloadBinary(platform);
   await generateFunctions();
-  // await createJSBundle();
-  await cacheDependencies(platform);
-  // await publishApp(args[1]);
+  await createJSBundle();
+  await cacheDependencies(platform, id);
+  await publishApp(args[1]);
 } else {
   printHelp();
 }
@@ -80,7 +80,7 @@ async function createJSBundle() {
   await generateProcess.status();
 }
 
-async function getAppPlatform(appName: string): Promise<string> {
+async function getAppPlatform(appName: string): Promise<any> {
   console.info(`Checking platform type of : ${appName} ...`);
   const azResourceCmd = [
     "az",
@@ -124,34 +124,10 @@ async function getAppPlatform(appName: string): Promise<string> {
       new TextDecoder().decode(azFunctionOutput),
     );
     azFunctionProcess.close();
-
-    // update app setting `DENO_DIR` settings for cache files
-    const azFunctionSettingCmd = [
-      "az",
-      "functionapp",
-      "config",
-      "appsettings",
-      "set",
-      "--ids",
-      id,
-      "-o",
-      "json",
-      "--settings",
-    ];
-    if (!config.linuxFxVersion) {
-      azFunctionSettingCmd.push("DENO_DIR=D:\\home\\site\\wwwroot\\.cache");
-    } else {
-      azFunctionSettingCmd.push("DENO_DIR=/home/site/wwwroot/.cache");
-    }
-
-    const azFunctionSettingProcess = await runWithRetry(
-      { cmd: azFunctionSettingCmd, stdout: "piped" },
-      "az.cmd",
-    );
-    await azFunctionSettingProcess.output();
-    azFunctionSettingProcess.close();
-
-    return !config.linuxFxVersion ? "windows" : "linux";
+    return {
+      platform: !config.linuxFxVersion ? "windows" : "linux",
+      id
+    };
   } catch {
     throw new Error(`Not found: ${appName}`);
   }
@@ -284,7 +260,33 @@ async function generateFunctions() {
   await generateProcess.status();
 }
 
-async function cacheDependencies(platform: string) {
+async function cacheDependencies(platform: string, id: string) {
+  // update app setting `DENO_DIR` settings for cache files
+  const azFuncCmd = [
+    "az",
+    "functionapp",
+    "config",
+    "appsettings",
+    "set",
+    "--ids",
+    id,
+    "-o",
+    "json",
+    "--settings",
+  ];
+  if (platform === 'windows') {
+    azFuncCmd.push("DENO_DIR=D:\\home\\site\\wwwroot\\.cache");
+  } else {
+    azFuncCmd.push("DENO_DIR=/home/site/wwwroot/.cache");
+  }
+
+  const azFuncProcess = await runWithRetry(
+    { cmd: azFuncCmd, stdout: "piped" },
+    "az.cmd",
+  );
+  await azFuncProcess.output();
+  azFuncProcess.close();
+
   const paths = {
       from: Deno.cwd().replace(/\\/g, '\\\\') as string,
       to: {
