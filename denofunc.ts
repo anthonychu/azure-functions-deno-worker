@@ -119,7 +119,30 @@ async function getAppPlatform(appName: string): Promise<string> {
       new TextDecoder().decode(azFunctionOutput),
     );
     azFunctionProcess.close();
-    return !config.linuxFxVersion ? "windows" : "linux";
+
+    if (config.linuxFxVersion) return "linux";
+
+    const azFunctionAppSettingsCmd = [
+      "az",
+      "functionapp",
+      "config",
+      "appsettings",
+      "set",
+      "--ids",
+      id,
+      "--settings",
+      "WEBSITE_LOAD_USER_PROFILE=1",
+      "-o",
+      "json",
+    ];
+    const azFunctionAppSettingsProcess = await runWithRetry(
+      { cmd: azFunctionAppSettingsCmd, stdout: "null" },
+      "az.cmd",
+    );
+    await azFunctionAppSettingsProcess.status();
+    azFunctionAppSettingsProcess.close();
+  
+    return "windows";
   } catch {
     throw new Error(`Not found: ${appName}`);
   }
