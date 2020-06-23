@@ -27,8 +27,8 @@ if (args.length === 1 && args[0] === "init") {
   await runFunc("start");
 } else if (args.length === 2 && args[0] === "publish") {
   const platform = await getAppPlatform(args[1]);
-  updateHostJson(platform);
   await downloadBinary(platform);
+  updateHostJson(platform);
   await generateFunctions();
   await createJSBundle();
   await publishApp(args[1]);
@@ -157,9 +157,18 @@ async function updateHostJson(platform: string) {
 
   const hostJSON: any = await readJson(hostJsonPath);
   hostJSON.httpWorker.description.defaultExecutablePath = platform === "windows"
-    ? "D:\\home\\site\\wwwroot\\bin\\windows\\deno.exe"
+    // NOTE: workaround for https://github.com/denoland/deno/issues/6409
+    ? "D:\\home\\site\\wwwroot\\bin\\windows\\deno.cmd"
     : "/home/site/wwwroot/bin/linux/deno",
-    await writeJson(hostJsonPath, hostJSON, { spaces: 2 }); // returns a promise
+  await writeJson(hostJsonPath, hostJSON, { spaces: 2 }); // returns a promise
+
+  if (platform !== 'windows') return
+
+  // NOTE: workaround for https://github.com/denoland/deno/issues/6409
+  // generate D:\\home\\site\\wwwroot\\bin\\windows\\deno.cmd for windows
+  await Deno.writeFile(`./bin/windows/deno.cmd`, new TextEncoder().encode(`@echo off
+echo | D:\\home\\site\\wwwroot\\bin\\windows\\deno.exe %*
+`));
 }
 
 async function downloadBinary(platform: string) {
