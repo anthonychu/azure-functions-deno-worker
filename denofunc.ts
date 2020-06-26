@@ -16,6 +16,10 @@ if (parsedArgs["help"]) {
   Deno.exit();
 }
 
+// NOTE: version of Deno which will be included in depoloyment package.
+// Currently, set same as local binary. In future it might be set from arguments of `denofunc`
+const DENO_VERISON_IN_PACKAGE = Deno.version.deno;
+
 if (args.length === 1 && args[0] === "init") {
   await initializeFromTemplate();
 } else if (
@@ -29,9 +33,9 @@ if (args.length === 1 && args[0] === "init") {
   const platform = await getAppPlatform(args[1]);
   updateHostJson(platform);
   await downloadBinary(platform);
-  await generateFunctions();
-  await createJSBundle();
-  await publishApp(args[1]);
+  // await generateFunctions();
+  // await createJSBundle();
+  // await publishApp(args[1]);
 } else {
   printHelp();
 }
@@ -162,6 +166,14 @@ async function updateHostJson(platform: string) {
     await writeJson(hostJsonPath, hostJSON, { spaces: 2 }); // returns a promise
 }
 
+async function getBinaryVersion(binPath: string) {
+
+  // Get version of binary in deployment package (not in PATH)
+  const versionProc = await Deno.run({cmd: [binPath, "--version"], stdout: 'piped'});
+  const version = new TextDecoder().decode((await versionProc.output())).replace(/deno\s+([^\n]+)\n[\s\S]+$/, '$1');
+  return version;
+}
+
 async function downloadBinary(platform: string) {
   const binDir = `./bin/${platform}`;
   const binPath = `${binDir}/deno${platform === "windows" ? ".exe" : ""}`;
@@ -181,7 +193,7 @@ async function downloadBinary(platform: string) {
   }
 
   const binZipPath = `${binDir}/deno.zip`;
-  if (!(await fileExists(binPath))) {
+  if (!(await fileExists(binPath)) || (await getBinaryVersion(binPath)) !== DENO_VERISON_IN_PACKAGE) {
     const downloadUrl =
       `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-${
         archive[platform]
