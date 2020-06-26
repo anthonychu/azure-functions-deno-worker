@@ -33,9 +33,9 @@ if (args.length === 1 && args[0] === "init") {
   const platform = await getAppPlatform(args[1]);
   updateHostJson(platform);
   await downloadBinary(platform);
-  // await generateFunctions();
-  // await createJSBundle();
-  // await publishApp(args[1]);
+  await generateFunctions();
+  await createJSBundle();
+  await publishApp(args[1]);
 } else {
   printHelp();
 }
