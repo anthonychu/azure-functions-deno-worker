@@ -27,7 +27,7 @@ if (args.length === 1 && args[0] === "init") {
   await runFunc("start");
 } else if (args.length === 2 && args[0] === "publish") {
   const platform = await getAppPlatform(args[1]);
-  updateHostJson(platform);
+  await updateHostJson(platform);
   await downloadBinary(platform);
   await generateFunctions();
   await createJSBundle();
