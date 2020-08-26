@@ -47,8 +47,8 @@ For more information, try the [quickstart](#getting-started) below.
 All Azure Functions [triggers and bindings](https://docs.microsoft.com/azure/azure-functions/functions-triggers-bindings) (including custom bindings) are supported.
 
 In this simplified programming model, each function is a single file. Here are a couple of examples:
-* [HTTP trigger](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/hello_world.ts)
-* [Queue trigger](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/queue_trigger.ts)
+* [HTTP trigger](https://github.com/anthonychu/azure-functions-deno-template/blob/main/functions/hello_world.ts)
+* [Queue trigger](https://github.com/anthonychu/azure-functions-deno-template/blob/main/functions/queue_trigger.ts)
 
 Check out the [new project template](https://github.com/anthonychu/azure-functions-deno-template) for the entire app structure.
 
@@ -99,9 +99,9 @@ denofunc --help
     ```
 
     A few of the files that are important to know about:
-    - [`functions/hello_world.ts`](https://github.com/anthonychu/azure-functions-deno-template/blob/master/functions/hello_world.ts) - a basic HTTP triggered function
-    - [`worker.ts`](https://github.com/anthonychu/azure-functions-deno-template/blob/master/worker.ts) - the Deno worker used by Azure Functions
-    - [`host.json`](https://github.com/anthonychu/azure-functions-deno-template/blob/master/host.json) - configuration of the function host
+    - [`functions/hello_world.ts`](https://github.com/anthonychu/azure-functions-deno-template/blob/main/functions/hello_world.ts) - a basic HTTP triggered function
+    - [`worker.ts`](https://github.com/anthonychu/azure-functions-deno-template/blob/main/worker.ts) - the Deno worker used by Azure Functions
+    - [`host.json`](https://github.com/anthonychu/azure-functions-deno-template/blob/main/host.json) - configuration of the function host
 
 1. Run the app locally:
 

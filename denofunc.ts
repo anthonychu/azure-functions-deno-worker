@@ -220,7 +220,7 @@ async function initializeFromTemplate() {
     console.info("Initializing project...");
     // download deno binary (that gets deployed to Azure)
     const response = await fetch(
-      "https://github.com/anthonychu/azure-functions-deno-template/archive/master.zip",
+      "https://github.com/anthonychu/azure-functions-deno-template/archive/main.zip",
     );
     const zipFile = await Deno.create(templateZipPath);
     const download = new Deno.Buffer(await response.arrayBuffer());
@@ -229,7 +229,7 @@ async function initializeFromTemplate() {
 
     const zip = await readZip(templateZipPath);
 
-    const subDirPath = "azure-functions-deno-template-master";
+    const subDirPath = "azure-functions-deno-template-main";
 
     await zip.unzip(".");
     await Deno.remove(templateZipPath);
