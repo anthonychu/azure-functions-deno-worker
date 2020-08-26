@@ -306,7 +306,7 @@ async function runWithRetry(
         (p) => p.endsWith(backupCommand),
       );
       if (newPath) {
-        const newCmd = [...runOptions.cmd];
+        const newCmd = [...runOptions.cmd].map(e => e.toString());
         newCmd[0] = newPath;
         const newOptions = { ...runOptions };
         newOptions.cmd = newCmd;
