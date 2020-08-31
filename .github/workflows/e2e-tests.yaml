@@ -24,7 +24,7 @@ jobs:
         deno-version: ${{ github.event.inputs.denoVersion }}
 
     - run: |
-        export PATH=$GITHUB_WORKSPACE/.deno/bin:$PATH
+        export PATH=$HOME/.deno/bin:$PATH
         echo $PATH
         deno install --allow-run --allow-read --allow-write --allow-net --unstable --force --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/${{ github.event.inputs.denoWorkerVersion }}/denofunc.ts
         denofunc init
