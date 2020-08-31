@@ -7,6 +7,10 @@ on:
         description: 'Deno Version'     
         required: true
         default: '1.3.1'
+      denoWorkerVersion:
+        description: 'Deno Worker Version'
+        required: true
+        default: 'preview'
 
 jobs:
   e2eLinux:
@@ -14,14 +18,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    
-    - name: Checkout code
-      uses: actions/checkout@v2
 
     - uses: denolib/setup-deno@v2
       with:
         deno-version: ${{ github.event.inputs.denoVersion }}
 
     - run: |
-        deno --version
-        deno run https://deno.land/std/examples/welcome.ts
+        deno install --allow-run --allow-read --allow-write --allow-net --unstable --force --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/${{ github.event.inputs.denoWorkerVersion }}/denofunc.ts
+        denofunc init
+        ls -la
