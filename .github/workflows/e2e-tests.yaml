@@ -33,7 +33,8 @@ jobs:
         if [ $MATRIX_OS == "windows-latest" ]; then
           choco install azure-functions-core-tools-3 --params "'/x64'"
         elif [ $MATRIX_OS == "macos-latest" ]; then
-          brew install azure-functions-core-tools-3
+          brew tap azure/functions
+          brew install azure-functions-core-tools@3
         else
           wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb
           sudo dpkg -i packages-microsoft-prod.deb
