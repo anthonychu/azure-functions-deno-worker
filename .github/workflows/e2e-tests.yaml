@@ -1,0 +1,24 @@
+name: Run end-to-end tests
+
+on: 
+  workflow_dispatch:
+    inputs:
+      denoVersion:
+        description: 'Deno Version'     
+        required: true
+        default: '1.3.1'
+
+jobs:
+  e2eLinux:
+    name: Linux end-to-end
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - uses: denolib/setup-deno@v2
+      with:
+        deno-version: ${{ github.event.inputs.denoVersion }}
+
+    - run: |
+        deno --version
+        deno run https://deno.land/std/examples/welcome.ts
