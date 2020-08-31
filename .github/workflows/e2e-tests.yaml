@@ -28,7 +28,7 @@ jobs:
 
     - run: |
         echo "matrix os is $MATRIX_OS"
-        if [$MATRIX_OS == "windows-latest"]; then
+        if [ $MATRIX_OS == "windows-latest" ]; then
           export DENOFUNC_COMMAND=denofunc.cmd
         else
           export DENOFUNC_COMMAND=denofunc
