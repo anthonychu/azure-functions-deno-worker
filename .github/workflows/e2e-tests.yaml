@@ -76,7 +76,7 @@ jobs:
         $DENOFUNC_COMMAND init
         $DENOFUNC_COMMAND start &
         cd ..
-        sleep 30
+        sleep 60
         deno test -A
       name: Test denofunc init and start
       shell: bash
