@@ -25,6 +25,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - name: Login to Azure
+      uses: azure/login@v1.1
+      with:
+        creds: ${{secrets.AZURE_CREDENTIALS}}
+
     - uses: denolib/setup-deno@v2
       with:
         deno-version: ${{ github.event.inputs.denoVersion }}
@@ -62,6 +67,7 @@ jobs:
         cd ..
         sleep 30
         deno test -A
+        az functionapp list
       name: Test denofunc init and start
       shell: bash
       env:
