@@ -24,7 +24,7 @@ jobs:
         - os: ubuntu-latest
           winFuncAppName: deno-worker-tests-linux-win
           linuxFuncAppName: deno-worker-tests-linux-linux
-        - os: windows-latest
+        - os: macos-latest
           winFuncAppName: deno-worker-tests-mac-win
           linuxFuncAppName: deno-worker-tests-mac-linux
 
