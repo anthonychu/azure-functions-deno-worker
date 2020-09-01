@@ -17,6 +17,17 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+        - os: windows-latest
+          winFuncAppName: deno-worker-tests-win-win
+          linuxFuncAppName: deno-worker-tests-win-linux
+        - os: ubuntu-latest
+          winFuncAppName: deno-worker-tests-linux-win
+          linuxFuncAppName: deno-worker-tests-linux-linux
+        - os: windows-latest
+          winFuncAppName: deno-worker-tests-mac-win
+          linuxFuncAppName: deno-worker-tests-mac-linux
+
     name: ${{ matrix.os }} end-to-end
     runs-on: ${{ matrix.os }}
 
@@ -67,8 +78,26 @@ jobs:
         cd ..
         sleep 30
         deno test -A
-        az functionapp list
       name: Test denofunc init and start
       shell: bash
       env:
         MATRIX_OS: ${{ matrix.os }}
+
+    - run: |
+        if [ $MATRIX_OS == "windows-latest" ]; then
+          export DENOFUNC_COMMAND=denofunc.cmd
+        else
+          export DENOFUNC_COMMAND=denofunc
+        fi
+
+        export PATH=$HOME/.deno/bin:$PATH
+        cd myapp
+        
+        $DENOFUNC_COMMAND publish $MATRIX_LINUX_FUNC_APP_NAME
+        $DENOFUNC_COMMAND publish $MATRIX_WIN_FUNC_APP_NAME
+      name: Test denofunc publish
+      shell: bash
+      env:
+        MATRIX_OS: ${{ matrix.os }}
+        MATRIX_WIN_FUNC_APP_NAME: ${{ matrix.winFuncAppName }}
+        MATRIX_LINUX_FUNC_APP_NAME: ${{ matrix.linuxFuncAppName }}
