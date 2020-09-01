@@ -95,6 +95,13 @@ jobs:
         
         $DENOFUNC_COMMAND publish $MATRIX_LINUX_FUNC_APP_NAME
         $DENOFUNC_COMMAND publish $MATRIX_WIN_FUNC_APP_NAME
+
+        cd ..
+        export FUNCTION_APP_BASE_URL=https://$MATRIX_LINUX_FUNC_APP_NAME.azurewebsites.net
+        deno test -A
+
+        export FUNCTION_APP_BASE_URL=https://$MATRIX_WIN_FUNC_APP_NAME.azurewebsites.net
+        deno test -A
       name: Test denofunc publish
       shell: bash
       env:
