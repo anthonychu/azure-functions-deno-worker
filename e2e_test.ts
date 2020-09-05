@@ -5,6 +5,7 @@ import {
 
 Deno.test("hello_world HTTP trigger works", async () => {
   const baseUrl = Deno.env.get("FUNCTION_APP_BASE_URL") ?? "http://localhost:7071"
+  console.log(`Testing function app at: ${baseUrl}`)
   const resp = await fetch(`${baseUrl}/api/hello_world`);
   const data = await resp.text();
   assertStringContains(data, "Azure Functions");
