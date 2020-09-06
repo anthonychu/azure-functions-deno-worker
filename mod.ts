@@ -111,7 +111,7 @@ export class AzureFunctionsWorker {
             };
           }
 
-          let parsedBody: any = parseBody(body);
+          let parsedBody: any = await parseBody(body);
 
           const isHttpPassthrough: boolean = parsedBody === undefined ||
             !(parsedBody.Data && parsedBody.Metadata);
