@@ -51,11 +51,11 @@ class FunctionHttpRequest implements HttpRequest {
   }
 }
 
-function parseBody(body: { type: string; value: any }) {
-  let value = body.value;
+async function parseBody(body: { type: string; value: any }) {
+  let value = await body.value;
   if (body.type === "text") {
     try {
-      value = JSON.parse(body.value);
+      value = JSON.parse(value);
     } catch {}
   }
   return value;
