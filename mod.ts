@@ -1,10 +1,12 @@
 import { Application, Router, OakContext, Body } from "./worker_deps.ts";
-import {
+import type {
   AzureFunction,
+  HttpMethod,
+} from "./types.ts";
+import type {
   Context,
   Logger,
   HttpRequest,
-  HttpMethod,
 } from "./types.ts";
 
 export interface FunctionRegistration {

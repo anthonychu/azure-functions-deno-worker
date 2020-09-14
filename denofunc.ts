@@ -262,6 +262,7 @@ async function generateFunctions() {
       "--allow-read",
       "--allow-write",
       "--unstable",
+      "--no-check",
       "worker.ts",
     ],
     env: { "DENOFUNC_GENERATE": "1" },
