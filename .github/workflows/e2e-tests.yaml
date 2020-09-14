@@ -73,7 +73,9 @@ jobs:
         deno install --allow-run --allow-read --allow-write --allow-net --unstable --no-check --force --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/${{ github.event.inputs.denoWorkerVersion }}/denofunc.ts
 
         mkdir myapp && cd myapp
+        echo "Running denofunc init..."
         $DENOFUNC_COMMAND init
+        echo "Running denofunc start..."
         $DENOFUNC_COMMAND start &
         cd ..
         sleep 60
