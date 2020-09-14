@@ -70,7 +70,7 @@ jobs:
         fi
 
         export PATH=$HOME/.deno/bin:$PATH
-        deno install --allow-run --allow-read --allow-write --allow-net --unstable --force --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/${{ github.event.inputs.denoWorkerVersion }}/denofunc.ts
+        deno install --allow-run --allow-read --allow-write --allow-net --unstable --no-check --force --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/${{ github.event.inputs.denoWorkerVersion }}/denofunc.ts
 
         mkdir myapp && cd myapp
         $DENOFUNC_COMMAND init
