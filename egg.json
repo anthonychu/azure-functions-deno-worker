@@ -1,0 +1,10 @@
+{
+                                "name": "azure_functions",
+                                "description": "Run Deno 🦕 on Azure Functions ⚡️",
+                                "homepage": "https://github.com/anthonychu/azure-functions-deno-worker",
+                                "files": [
+                                  "./**/*.ts",
+                                  "README.md"
+                                ],
+                                "entry": "./mod.ts"
+                              }
