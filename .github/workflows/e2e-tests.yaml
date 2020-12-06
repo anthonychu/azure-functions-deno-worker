@@ -6,9 +6,13 @@ on:
       denoVersion:
         description: 'Deno Version'     
         required: true
-        default: '1.3.2'
+        default: '1.5.4'
       denoWorkerVersion:
         description: 'Deno Worker Version'
+        required: true
+        default: 'preview'
+      denoTemplateVersion:
+        description: 'Deno Template Version'
         required: true
         default: 'preview'
 
@@ -74,7 +78,7 @@ jobs:
         $DENOFUNC_COMMAND help
         mkdir myapp && cd myapp
         echo "Running $DENOFUNC_COMMAND init..."
-        $DENOFUNC_COMMAND init
+        $DENOFUNC_COMMAND init ${{ github.event.inputs.denoTemplateVersion }}
         echo "Running $DENOFUNC_COMMAND start..."
         $DENOFUNC_COMMAND start &
         cd ..
