@@ -5,10 +5,9 @@ import {
   ensureDir,
   move,
   walk,
-  readJson,
-  writeJson,
 } from "./deps.ts";
 
+const shouldBundle = false;
 const parsedArgs = parse(Deno.args);
 
 if (parsedArgs["help"]) {
@@ -16,8 +15,9 @@ if (parsedArgs["help"]) {
   Deno.exit();
 }
 
-if (args.length === 1 && args[0] === "init") {
-  await initializeFromTemplate();
+if (args.length >= 1 && args[0] === "init") {
+  const templateDownloadBranch: string | undefined = args[1];
+  await initializeFromTemplate(templateDownloadBranch);
 } else if (
   args.length === 1 && args[0] === "start" ||
   args.length === 2 && `${args[0]} ${args[1]}` === "host start"
@@ -68,11 +68,13 @@ async function listFiles(dir: string) {
 }
 
 async function createJSBundle() {
-  const bundleFileName = "worker.bundle.js";
-  const cmd = ["deno", "bundle", "--unstable", "worker.ts", bundleFileName];
-  console.info(`Running command: ${cmd.join(" ")}`);
-  const generateProcess = Deno.run({ cmd });
-  await generateProcess.status();
+  if (shouldBundle) {
+    const bundleFileName = "worker.bundle.js";
+    const cmd = ["deno", "bundle", "--unstable", "worker.ts", bundleFileName];
+    console.info(`Running command: ${cmd.join(" ")}`);
+    const generateProcess = Deno.run({ cmd });
+    await generateProcess.status();
+  }
 }
 
 async function getAppPlatform(appName: string): Promise<string> {
@@ -97,16 +99,21 @@ async function getAppPlatform(appName: string): Promise<string> {
   azResourceProcess.close();
 
   try {
-    const id = resources.filter((resource: any) =>
+    const resource = resources.find((resource: any) =>
       resource.name === appName
-    )[0].id;
+    );
+    
+    if ((resource.kind as string).includes("linux")) {
+      return "linux";
+    }
+
     const azFunctionCmd = [
       "az",
       "functionapp",
       "config",
       "show",
       "--ids",
-      id,
+      resource.id,
       "-o",
       "json",
     ];
@@ -120,8 +127,6 @@ async function getAppPlatform(appName: string): Promise<string> {
     );
     azFunctionProcess.close();
 
-    if (config.linuxFxVersion) return "linux";
-
     const azFunctionAppSettingsCmd = [
       "az",
       "functionapp",
@@ -129,7 +134,7 @@ async function getAppPlatform(appName: string): Promise<string> {
       "appsettings",
       "set",
       "--ids",
-      id,
+      resource.id,
       "--settings",
       "WEBSITE_LOAD_USER_PROFILE=1",
       "-o",
@@ -156,10 +161,19 @@ async function updateHostJson(platform: string) {
   }
 
   const hostJSON: any = await readJson(hostJsonPath);
-  hostJSON.httpWorker.description.defaultExecutablePath = platform === "windows"
+  hostJSON.customHandler.description.defaultExecutablePath = platform === "windows"
     ? "D:\\home\\site\\wwwroot\\bin\\windows\\deno.exe"
     : "/home/site/wwwroot/bin/linux/deno",
-    await writeJson(hostJsonPath, hostJSON, { spaces: 2 }); // returns a promise
+    await writeJson(hostJsonPath, hostJSON); // returns a promise
+}
+
+function writeJson(path: string, data: object): void  {
+  Deno.writeTextFileSync(path, JSON.stringify(data, null, 2));
+}
+
+function readJson(path: string): string {
+  const decoder = new TextDecoder("utf-8");
+  return JSON.parse(decoder.decode(Deno.readFileSync(path)));
 }
 
 async function downloadBinary(platform: string) {
@@ -208,9 +222,9 @@ async function downloadBinary(platform: string) {
   }
 }
 
-async function initializeFromTemplate() {
+async function initializeFromTemplate(downloadBranch: string = "main") {
   const templateZipPath = `./template.zip`;
-
+  const templateDownloadPath = `https://github.com/anthonychu/azure-functions-deno-template/archive/${downloadBranch}.zip`;
   let isEmpty = true;
   for await (const dirEntry of Deno.readDir(".")) {
     isEmpty = false;
@@ -218,10 +232,9 @@ async function initializeFromTemplate() {
 
   if (isEmpty) {
     console.info("Initializing project...");
+    console.info(`Downloading from ${templateDownloadPath}...`);
     // download deno binary (that gets deployed to Azure)
-    const response = await fetch(
-      "https://github.com/anthonychu/azure-functions-deno-template/archive/main.zip",
-    );
+    const response = await fetch(templateDownloadPath);
     const zipFile = await Deno.create(templateZipPath);
     const download = new Deno.Buffer(await response.arrayBuffer());
     await Deno.copy(download, zipFile);
@@ -229,7 +242,7 @@ async function initializeFromTemplate() {
 
     const zip = await readZip(templateZipPath);
 
-    const subDirPath = "azure-functions-deno-template-main";
+    const subDirPath = `azure-functions-deno-template-${downloadBranch}`;
 
     await zip.unzip(".");
     await Deno.remove(templateZipPath);
@@ -327,11 +340,7 @@ async function publishApp(appName: string) {
     "azure",
     "functionapp",
     "publish",
-    appName,
-    "--no-build",
-    "-b",
-    "local",
-    "--force",
+    appName
   );
 }
 
