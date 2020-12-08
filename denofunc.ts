@@ -340,7 +340,8 @@ async function publishApp(appName: string) {
     "azure",
     "functionapp",
     "publish",
-    appName
+    appName,
+    "--force"
   );
 }
 
