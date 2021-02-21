@@ -2,12 +2,12 @@ const { args } = Deno;
 import {
   parse,
   readZip,
-  ensureDir,
   move,
   walk,
 } from "./deps.ts";
 
 const shouldBundle = false;
+const baseExecutableFileName = "worker";
 const parsedArgs = parse(Deno.args);
 
 if (parsedArgs["help"]) {
@@ -28,9 +28,8 @@ if (args.length >= 1 && args[0] === "init") {
 } else if (args.length === 2 && args[0] === "publish") {
   const platform = await getAppPlatform(args[1]);
   await updateHostJson(platform);
-  await downloadBinary(platform);
   await generateFunctions();
-  await createJSBundle();
+  await generateExecutable(platform);
   await publishApp(args[1]);
 } else {
   printHelp();
@@ -65,6 +64,24 @@ async function listFiles(dir: string) {
     }
   }
   return files;
+}
+
+async function generateExecutable(platform?: string) {
+  const entries = ['', `.exe`].map(ext => `./${baseExecutableFileName}${ext}`);
+  for (const entry of entries) {
+    if (await fileExists(entry)) await Deno.remove(entry);
+  }
+
+  const executableFileName = `${baseExecutableFileName}${platform === "windows" ? ".exe" : ""}`;
+  const cmd = ["deno", "compile", "--unstable", "--lite", "--allow-env", "--allow-net", "--allow-read", "--output", executableFileName];
+  if (platform && ['windows', 'linux'].includes(platform)) {
+    cmd.push('--target');
+    cmd.push(platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu');
+  }
+  cmd.push("worker.ts");
+  console.info(`Running command: ${cmd.join(" ")}`);
+  const generateProcess = Deno.run({ cmd });
+  await generateProcess.status();
 }
 
 async function createJSBundle() {
@@ -102,7 +119,7 @@ async function getAppPlatform(appName: string): Promise<string> {
     const resource = resources.find((resource: any) =>
       resource.name === appName
     );
-    
+
     if ((resource.kind as string).includes("linux")) {
       return "linux";
     }
@@ -146,7 +163,7 @@ async function getAppPlatform(appName: string): Promise<string> {
     );
     await azFunctionAppSettingsProcess.status();
     azFunctionAppSettingsProcess.close();
-  
+
     return "windows";
   } catch {
     throw new Error(`Not found: ${appName}`);
@@ -162,9 +179,9 @@ async function updateHostJson(platform: string) {
 
   const hostJSON: any = await readJson(hostJsonPath);
   hostJSON.customHandler.description.defaultExecutablePath = platform === "windows"
-    ? "D:\\home\\site\\wwwroot\\bin\\windows\\deno.exe"
-    : "/home/site/wwwroot/bin/linux/deno",
-    await writeJson(hostJsonPath, hostJSON); // returns a promise
+    ? `D:\\home\\site\\wwwroot\\${baseExecutableFileName}.exe`
+    : `/home/site/wwwroot/${baseExecutableFileName}`;
+  await writeJson(hostJsonPath, hostJSON); // returns a promise
 }
 
 function writeJson(path: string, data: object): void  {
@@ -176,51 +193,50 @@ function readJson(path: string): string {
   return JSON.parse(decoder.decode(Deno.readFileSync(path)));
 }
 
-async function downloadBinary(platform: string) {
-  const binDir = `./bin/${platform}`;
-  const binPath = `${binDir}/deno${platform === "windows" ? ".exe" : ""}`;
-  const archive: any = {
-    "windows": "pc-windows-msvc",
-    "linux": "unknown-linux-gnu",
-  };
+// async function downloadBinary(platform: string) {
+//   const binDir = `./bin/${platform}`;
+//   const binPath = `${binDir}/deno${platform === "windows" ? ".exe" : ""}`;
+//   const archive: any = {
+//     "windows": "pc-windows-msvc",
+//     "linux": "unknown-linux-gnu",
+//   };
 
-  // remove unnecessary files/dirs in "./bin"
-  if (await directoryExists("./bin")) {
-    const entries = (await listFiles("./bin"))
-      .filter((entry) => !binPath.startsWith(entry))
-      .sort((str1, str2) => str1.length < str2.length ? 1 : -1);
-    for (const entry of entries) {
-      await Deno.remove(entry);
-    }
-  }
+//   // remove unnecessary files/dirs in "./bin"
+//   if (await directoryExists("./bin")) {
+//     const entries = (await listFiles("./bin"))
+//       .filter((entry) => !binPath.startsWith(entry))
+//       .sort((str1, str2) => str1.length < str2.length ? 1 : -1);
+//     for (const entry of entries) {
+//       await Deno.remove(entry);
+//     }
+//   }
 
-  const binZipPath = `${binDir}/deno.zip`;
-  if (!(await fileExists(binPath))) {
-    const downloadUrl =
-      `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-${
-        archive[platform]
-      }.zip`;
-    console.info(`Downloading deno binary from: ${downloadUrl} ...`);
-    // download deno binary (that gets deployed to Azure)
-    const response = await fetch(downloadUrl);
-    await ensureDir(binDir);
-    const zipFile = await Deno.create(binZipPath);
-    const download = new Deno.Buffer(await response.arrayBuffer());
-    await Deno.copy(download, zipFile);
-    Deno.close(zipFile.rid);
+//   const binZipPath = `${binDir}/deno.zip`;
+//   if (!(await fileExists(binPath))) {
+//     const downloadUrl =
+//       `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-${archive[platform]
+//       }.zip`;
+//     console.info(`Downloading deno binary from: ${downloadUrl} ...`);
+//     // download deno binary (that gets deployed to Azure)
+//     const response = await fetch(downloadUrl);
+//     await ensureDir(binDir);
+//     const zipFile = await Deno.create(binZipPath);
+//     const download = new Deno.Buffer(await response.arrayBuffer());
+//     await Deno.copy(download, zipFile);
+//     Deno.close(zipFile.rid);
 
-    const zip = await readZip(binZipPath);
+//     const zip = await readZip(binZipPath);
 
-    await zip.unzip(binDir);
+//     await zip.unzip(binDir);
 
-    if (Deno.build.os !== "windows") {
-      await Deno.chmod(binPath, 0o755);
-    }
+//     if (Deno.build.os !== "windows") {
+//       await Deno.chmod(binPath, 0o755);
+//     }
 
-    await Deno.remove(binZipPath);
-    console.info(`Downloaded deno binary at: ${await Deno.realPath(binPath)}`);
-  }
-}
+//     await Deno.remove(binZipPath);
+//     console.info(`Downloaded deno binary at: ${await Deno.realPath(binPath)}`);
+//   }
+// }
 
 async function initializeFromTemplate(downloadBranch: string = "main") {
   const templateZipPath = `./template.zip`;
