@@ -25,13 +25,13 @@ if (args.length >= 1 && args[0] === "init") {
   await generateFunctions();
   await createJSBundle();
   await runFunc("start");
-} else if (args.length === 2 && args[0] === "publish") {
-  const platform = await getAppPlatform(args[1]);
+} else if (args[0] === "publish" && (args.length === 2 || args.length === 4 && args[2] === "--slot" )) {
+  const platform = await getAppPlatform(args[1], args[3]);
   await updateHostJson(platform);
   await downloadBinary(platform);
   await generateFunctions();
   await createJSBundle();
-  await publishApp(args[1]);
+  await publishApp(args[1], args[3]);
 } else {
   printHelp();
 }
@@ -77,14 +77,14 @@ async function createJSBundle() {
   }
 }
 
-async function getAppPlatform(appName: string): Promise<string> {
-  console.info(`Checking platform type of : ${appName} ...`);
+async function getAppPlatform(appName: string, slotName?: string): Promise<string> {
+  console.info(`Checking platform type of : ${appName + (slotName ? `/${slotName}` : "")} ...`);
   const azResourceCmd = [
     "az",
     "resource",
     "list",
     "--resource-type",
-    "Microsoft.web/sites",
+    `Microsoft.web/sites${slotName ? "/slots": ""}`,
     "-o",
     "json",
   ];
@@ -100,7 +100,7 @@ async function getAppPlatform(appName: string): Promise<string> {
 
   try {
     const resource = resources.find((resource: any) =>
-      resource.name === appName
+      resource.name === (appName + (slotName ? `/${slotName}` : ""))
     );
     
     if ((resource.kind as string).includes("linux")) {
@@ -149,7 +149,7 @@ async function getAppPlatform(appName: string): Promise<string> {
   
     return "windows";
   } catch {
-    throw new Error(`Not found: ${appName}`);
+    throw new Error(`Not found: ${appName + (slotName ? `/${slotName}` : "")}`);
   }
 }
 
@@ -335,13 +335,14 @@ async function runWithRetry(
   }
 }
 
-async function publishApp(appName: string) {
-  await runFunc(
+async function publishApp(appName: string, slotName?: string) {
+  const runFuncArgs = [
     "azure",
     "functionapp",
     "publish",
     appName
-  );
+  ];
+  await runFunc(...(slotName ? runFuncArgs.concat(["--slot", slotName]) : runFuncArgs));
 }
 
 function printLogo() {
@@ -377,7 +378,7 @@ denofunc init
 denofunc start
     Generate functions artifacts and start Azure Functions Core Tools
 
-denofunc publish <function_app_name>
+denofunc publish <function_app_name> [--slot <slot_name>]
     Publish to Azure
     `);
 }
