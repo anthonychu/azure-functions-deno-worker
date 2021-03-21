@@ -37,7 +37,7 @@ denofunc init
 denofunc start
 
 # deploy the app
-denofunc publish $functionAppName
+denofunc publish $functionAppName [--slot $slotName]
 ```
 
 For more information, try the [quickstart](#getting-started) below.
