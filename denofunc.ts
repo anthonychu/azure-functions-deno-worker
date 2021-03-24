@@ -1,4 +1,3 @@
-const { args } = Deno;
 import {
   parse,
   readZip,
@@ -10,27 +9,30 @@ const shouldBundle = false;
 const baseExecutableFileName = "worker";
 const parsedArgs = parse(Deno.args);
 
-if (parsedArgs["help"]) {
+if (parsedArgs._[0] === "help") {
   printHelp();
   Deno.exit();
 }
 
-if (args.length >= 1 && args[0] === "init") {
-  const templateDownloadBranch: string | undefined = args[1];
+if (parsedArgs._.length >= 1 && parsedArgs._[0] === "init") {
+  const templateDownloadBranch: string | undefined = parsedArgs?._[1].toString();
   await initializeFromTemplate(templateDownloadBranch);
 } else if (
-  args.length === 1 && args[0] === "start" ||
-  args.length === 2 && `${args[0]} ${args[1]}` === "host start"
+  parsedArgs._.length === 1 && parsedArgs._[0] === "start" ||
+  parsedArgs._.length === 2 && parsedArgs._.join(' ') === "host start"
 ) {
   await generateFunctions();
   await createJSBundle();
   await runFunc("start");
-} else if (args[0] === "publish" && (args.length === 2 || args.length === 4 && args[2] === "--slot" )) {
-  const platform = await getAppPlatform(args[1], args[3]);
+} else if (
+  parsedArgs._[0] === "publish" && parsedArgs._.length === 2) {
+  const appName = parsedArgs._[1].toString();
+  const slotName = parsedArgs["slot"]?.toString();
+  const platform = await getAppPlatform(appName, slotName);
   await updateHostJson(platform);
   await generateFunctions();
   await generateExecutable(platform);
-  await publishApp(args[1], args[3]);
+  await publishApp(appName, slotName);
 } else {
   printHelp();
 }
@@ -72,8 +74,7 @@ async function generateExecutable(platform?: string) {
     if (await fileExists(entry)) await Deno.remove(entry);
   }
 
-  const executableFileName = `${baseExecutableFileName}${platform === "windows" ? ".exe" : ""}`;
-  const cmd = ["deno", "compile", "--unstable", "--lite", "--allow-env", "--allow-net", "--allow-read", "--output", executableFileName];
+  const cmd = ["deno", "compile", "--unstable", "--lite", "--allow-env", "--allow-net", "--allow-read", "--output", baseExecutableFileName];
   if (platform && ['windows', 'linux'].includes(platform)) {
     cmd.push('--target');
     cmd.push(platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu');
