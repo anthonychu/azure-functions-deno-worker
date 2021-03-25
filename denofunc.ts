@@ -69,15 +69,14 @@ async function listFiles(dir: string) {
 }
 
 async function generateExecutable(platform?: string) {
-  const entries = ['', `.exe`].map(ext => `./${baseExecutableFileName}${ext}`);
-  for (const entry of entries) {
-    if (await fileExists(entry)) await Deno.remove(entry);
-  }
+  try {
+    await Deno.remove('./bin', {recursive: true});
+  } catch {}
+  await Deno.mkdir(`./bin/${platform}`, { recursive: true });
 
-  const cmd = ["deno", "compile", "--unstable", "--lite", "--allow-env", "--allow-net", "--allow-read", "--output", baseExecutableFileName];
+  const cmd = ["deno", "compile", "--unstable", "--lite", "--allow-env", "--allow-net", "--allow-read", "--output", `./bin/${platform}/${baseExecutableFileName}`];
   if (platform && ['windows', 'linux'].includes(platform)) {
-    cmd.push('--target');
-    cmd.push(platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu');
+    cmd.push('--target', platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu');
   }
   cmd.push("worker.ts");
   console.info(`Running command: ${cmd.join(" ")}`);
@@ -180,8 +179,8 @@ async function updateHostJson(platform: string) {
 
   const hostJSON: any = await readJson(hostJsonPath);
   hostJSON.customHandler.description.defaultExecutablePath = platform === "windows"
-    ? `D:\\home\\site\\wwwroot\\${baseExecutableFileName}.exe`
-    : `/home/site/wwwroot/${baseExecutableFileName}`;
+    ? `D:\\home\\site\\wwwroot\\bin\\${platform}\\${baseExecutableFileName}.exe`
+    : `/home/site/wwwroot/bin/${platform}/${baseExecutableFileName}`;
   await writeJson(hostJsonPath, hostJSON); // returns a promise
 }
 
