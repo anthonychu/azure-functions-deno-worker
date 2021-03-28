@@ -137,7 +137,7 @@ export class AzureFunctionsWorker {
 
           ctx.response.body = {
             Logs: context.log.logs,
-            Outputs: context,
+            Outputs: context.bindings,
             ReturnValue: result,
           };
           ctx.response.headers.set("content-type", "application/json");
