@@ -421,9 +421,10 @@ denofunc start
 denofunc publish <function_app_name> [options]
     Publish to Azure
     options:
-      --slot <slot_name>                       Specify name of the deployment slot
-      --bundle-style executable|jsbundle|none  
-        executable(default): Deploy worker as one executable
-        jsbundle:
+      --slot         <slot_name>              Specify name of the deployment slot
+      --bundle-style executable|jsbundle|none Select bundle style on deployment 
+        executable(default): Bundle as one executable
+        jsbundle:            Bundle as one javascript worker & Deno runtime
+        none:                No bundle
     `);
 }
