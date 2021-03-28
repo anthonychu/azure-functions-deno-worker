@@ -195,10 +195,7 @@ async function updateHostJson(platform: string, bundleStyle: string) {
   }
 
   const hostJSON: any = await readJson(hostJsonPath);
-  const executableFileName = bundleStyle === "executable" ? baseExecutableFileName : "deno";
-  hostJSON.customHandler.description.defaultExecutablePath = platform === "windows"
-    ? `D:\\home\\site\\wwwroot\\bin\\${platform}\\${executableFileName}.exe`
-    : `/home/site/wwwroot/bin/${platform}/${executableFileName}`;
+  hostJSON.customHandler.description.defaultExecutablePath = `bin/${platform}/${bundleStyle === "executable" ? baseExecutableFileName : "deno"}${platform === "windows" ? ".exe" : ""}`;
   hostJSON.customHandler.description.arguments = bundleStyle === "executable" ? [] : [
     "run",
     ...commonDenoOptions,
