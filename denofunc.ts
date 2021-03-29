@@ -94,10 +94,20 @@ async function generateExecutable(platformArg?: string) {
   const platform = platformArg || Deno.build.os;
   await Deno.mkdir(`./bin/${platform}`, { recursive: true });
 
-  const cmd = ["deno", "compile", "--unstable", "--lite", ...commonDenoOptions, "--output", `./bin/${platform}/${baseExecutableFileName}`];
-  if (platform && ['windows', 'linux'].includes(platform)) {
-    cmd.push('--target', platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu');
-  }
+  const cmd = [
+    "deno",
+    "compile",
+    "--unstable",
+    "--lite",
+    ...commonDenoOptions,
+    "--output",
+    `./bin/${platform}/${baseExecutableFileName}`,
+    ...(['windows', 'linux'].includes(platform)
+      ? ['--target', platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu']
+      : []
+    ),
+    "worker.ts"
+  ];
   cmd.push("worker.ts");
   console.info(`Running command: ${cmd.join(" ")}`);
   const generateProcess = Deno.run({ cmd });
@@ -188,19 +198,24 @@ async function getAppPlatform(appName: string, slotName?: string): Promise<strin
 }
 
 async function updateHostJson(platform: string, bundleStyle: string) {
-  // update `defaultExecutablePath` in host.json
+  // update `defaultExecutablePath` and `arguments` in host.json
   const hostJsonPath = "./host.json";
   if (!(await fileExists(hostJsonPath))) {
     throw new Error(`\`${hostJsonPath}\` not found`);
   }
 
   const hostJSON: any = await readJson(hostJsonPath);
-  hostJSON.customHandler.description.defaultExecutablePath = `bin/${platform}/${bundleStyle === "executable" ? baseExecutableFileName : "deno"}${platform === "windows" ? ".exe" : ""}`;
-  hostJSON.customHandler.description.arguments = bundleStyle === "executable" ? [] : [
-    "run",
-    ...commonDenoOptions,
-    bundleStyle === "jsbundle" ? bundleFileName : "worker.ts"
-  ];
+  if (!hostJSON.customHandler) hostJSON.customHandler = {};
+  hostJSON.customHandler.description = {
+    defaultExecutablePath: `bin/${platform}/${bundleStyle === "executable" ? baseExecutableFileName : "deno"}${platform === "windows" ? ".exe" : ""}`,
+    arguments: bundleStyle === "executable"
+      ? []
+      : [
+        "run",
+        ...commonDenoOptions,
+        bundleStyle === "jsbundle" ? bundleFileName : "worker.ts"
+      ]
+  };
 
   await writeJson(hostJsonPath, hostJSON); // returns a promise
 }
