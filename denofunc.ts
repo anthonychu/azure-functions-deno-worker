@@ -103,30 +103,6 @@ async function getAppPlatform(appName: string, slotName?: string): Promise<strin
       resource.name === (appName + (slotName ? `/${slotName}` : ""))
     );
     
-    if ((resource.kind as string).includes("linux")) {
-      return "linux";
-    }
-
-    const azFunctionCmd = [
-      "az",
-      "functionapp",
-      "config",
-      "show",
-      "--ids",
-      resource.id,
-      "-o",
-      "json",
-    ];
-    const azFunctionProcess = await runWithRetry(
-      { cmd: azFunctionCmd, stdout: "piped" },
-      "az.cmd",
-    );
-    const azFunctionOutput = await azFunctionProcess.output();
-    const config = JSON.parse(
-      new TextDecoder().decode(azFunctionOutput),
-    );
-    azFunctionProcess.close();
-
     const azFunctionAppSettingsCmd = [
       "az",
       "functionapp",
@@ -135,8 +111,12 @@ async function getAppPlatform(appName: string, slotName?: string): Promise<strin
       "set",
       "--ids",
       resource.id,
+      ...(slotName
+        ? ["--slot", slotName]
+        : []
+      ),
       "--settings",
-      "WEBSITE_LOAD_USER_PROFILE=1",
+      "FUNCTIONS_WORKER_RUNTIME=custom",
       "-o",
       "json",
     ];
@@ -147,7 +127,7 @@ async function getAppPlatform(appName: string, slotName?: string): Promise<strin
     await azFunctionAppSettingsProcess.status();
     azFunctionAppSettingsProcess.close();
   
-    return "windows";
+    return (resource.kind as string).includes("linux") ? "linux" : "windows";
   } catch {
     throw new Error(`Not found: ${appName + (slotName ? `/${slotName}` : "")}`);
   }
