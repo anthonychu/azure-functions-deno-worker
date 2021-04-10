@@ -6,7 +6,6 @@ import {
   walk,
 } from "./deps.ts";
 
-const shouldBundle = false;
 const baseExecutableFileName = "worker";
 const bundleFileName = "worker.bundle.js";
 const commonDenoOptions = ["--allow-env", "--allow-net", "--allow-read"]
@@ -108,7 +107,6 @@ async function generateExecutable(platformArg?: string) {
     ),
     "worker.ts"
   ];
-  cmd.push("worker.ts");
   console.info(`Running command: ${cmd.join(" ")}`);
   const generateProcess = Deno.run({ cmd });
   await generateProcess.status();
