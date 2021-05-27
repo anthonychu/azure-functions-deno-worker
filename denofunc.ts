@@ -4,12 +4,18 @@ import {
   ensureDir,
   move,
   walk,
+  semver,
 } from "./deps.ts";
 
 const baseExecutableFileName = "worker";
 const bundleFileName = "worker.bundle.js";
-const commonDenoOptions = ["--allow-env", "--allow-net", "--allow-read"]
+const commonDenoOptions = ["--allow-env", "--allow-net", "--allow-read"];
 const parsedArgs = parse(Deno.args);
+
+const bundleStyles = ["executable", "jsbundle", "none"];
+const STYLE_EXECUTABLE = 0;
+const STYLE_JSBUNDLE = 1;
+const STYLE_NONE = 2;
 
 if (parsedArgs._[0] === "help") {
   printHelp();
@@ -27,9 +33,16 @@ if (parsedArgs._.length >= 1 && parsedArgs._[0] === "init") {
   await createJSBundle();
   await runFunc("start");
 } else if (parsedArgs._[0] === "publish" && parsedArgs._.length === 2) {
-  const bundleStyle = parsedArgs["bundle-style"] || "executable";
-  if (!["executable", "jsbundle", "none"].includes(bundleStyle)) {
+  const bundleStyle = parsedArgs["bundle-style"]      // use specified bundle style
+   || (semver.satisfies(Deno.version.deno, ">=1.6.0") // default style depends on Deno runtime version
+      ? bundleStyles[STYLE_EXECUTABLE]                //   for v1.6.0 or later
+      : bundleStyles[STYLE_JSBUNDLE]                  //   for others
+    );
+  if (!bundleStyles.includes(bundleStyle)) {
     console.error(`The value \`${parsedArgs["bundle-style"]}\` of \`--bundle-style\` option is not acceptable.`)
+    Deno.exit(1);
+  } else if (semver.satisfies(Deno.version.deno, "<1.6.0") && bundleStyle === bundleStyles[STYLE_EXECUTABLE]) {
+    console.error(`Deno version v${Deno.version.deno} doesn't support \`${bundleStyles[STYLE_EXECUTABLE]}\` for bundle style.`);
     Deno.exit(1);
   }
   const appName = parsedArgs._[1].toString();
@@ -42,11 +55,11 @@ if (parsedArgs._.length >= 1 && parsedArgs._[0] === "init") {
   await updateHostJson(platform, bundleStyle);
   await generateFunctions();
 
-  if (bundleStyle === "executable") {
+  if (bundleStyle === bundleStyles[STYLE_EXECUTABLE]) {
     await generateExecutable(platform);
   } else {
     await downloadBinary(platform);
-    if (bundleStyle === "jsbundle") await createJSBundle();
+    if (bundleStyle === bundleStyles[STYLE_JSBUNDLE]) await createJSBundle();
   }
   await publishApp(appName, slotName);
 } else {
@@ -97,7 +110,7 @@ async function generateExecutable(platformArg?: string) {
     "deno",
     "compile",
     "--unstable",
-    "--lite",
+    ...(semver.satisfies(Deno.version.deno, ">=1.7.1 <1.10.0") ? ["--lite"] : []), // `--lite` option is implemented only between v1.7.1 and v1.9.x
     ...commonDenoOptions,
     "--output",
     `./bin/${platform}/${baseExecutableFileName}`,
@@ -185,13 +198,13 @@ async function updateHostJson(platform: string, bundleStyle: string) {
   const hostJSON: any = await readJson(hostJsonPath);
   if (!hostJSON.customHandler) hostJSON.customHandler = {};
   hostJSON.customHandler.description = {
-    defaultExecutablePath: `bin/${platform}/${bundleStyle === "executable" ? baseExecutableFileName : "deno"}${platform === "windows" ? ".exe" : ""}`,
-    arguments: bundleStyle === "executable"
+    defaultExecutablePath: `bin/${platform}/${bundleStyle === bundleStyles[STYLE_EXECUTABLE] ? baseExecutableFileName : "deno"}${platform === "windows" ? ".exe" : ""}`,
+    arguments: bundleStyle === bundleStyles[STYLE_EXECUTABLE]
       ? []
       : [
         "run",
         ...commonDenoOptions,
-        bundleStyle === "jsbundle" ? bundleFileName : "worker.ts"
+        bundleStyle === bundleStyles[STYLE_JSBUNDLE] ? bundleFileName : "worker.ts"
       ]
   };
 
@@ -411,10 +424,11 @@ denofunc start
 denofunc publish <function_app_name> [options]
     Publish to Azure
     options:
-      --slot         <slot_name>              Specify name of the deployment slot
-      --bundle-style executable|jsbundle|none Select bundle style on deployment 
-        executable(default): Bundle as one executable
-        jsbundle:            Bundle as one javascript worker & Deno runtime
-        none:                No bundle
+      --slot         <slot_name>                Specify name of the deployment slot
+      --bundle-style executable|jsbundle|none   Select bundle style on deployment 
+
+        executable:   Bundle as one executable(default option for Deno v1.6.0 or later).
+        jsbundle:     Bundle as one javascript worker & Deno runtime
+        none:         No bundle
     `);
 }
