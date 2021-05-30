@@ -59,7 +59,7 @@ Check out the [new project template](https://github.com/anthonychu/azure-functio
 * Linux, macOS, Windows
 * [Deno](https://deno.land/x/install/)
     - Tested on:
-        - `1.3.1`
+        - `1.10.2`
 * [Azure Functions Core Tools V3](https://github.com/Azure/azure-functions-core-tools#azure-functions-core-tools) - needed for running the app locally and deploying it
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
 * `denofunc` CLI - see [below](#install-the-denofunc-cli)
@@ -79,7 +79,7 @@ To install the CLI, run the following Deno command.
 
 ```bash
 deno install --allow-run --allow-read --allow-write --allow-net --unstable --force \
-    --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/v0.5.0/denofunc.ts
+    --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/v0.6.0/denofunc.ts
 ```
 
 Confirm it is installed correctly:
