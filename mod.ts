@@ -135,9 +135,14 @@ export class AzureFunctionsWorker {
 
           const result = await Promise.resolve(registration.handler(context));
 
+          // Merge `context.res` into `context.bindings`
+          // `context.res` is the special property for HTTP response
+          // https://docs.microsoft.com/en-us/azure/azure-functions/functions-reference-node?tabs=v2#response-object
+          if (context.res) context.bindings.res = context.res;
+
           ctx.response.body = {
             Logs: context.log.logs,
-            Outputs: context,
+            Outputs: context.bindings,
             ReturnValue: result,
           };
           ctx.response.headers.set("content-type", "application/json");

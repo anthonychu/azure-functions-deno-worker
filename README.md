@@ -27,8 +27,6 @@ This is a worker that lets you run Deno on [Azure Functions](https://docs.micros
 
 The project includes a CLI `denofunc` to make it easy to create, run, and deploy your Deno Azure Functions apps.
 
-> **Note:** Due to some issues with the Deno bundler, we currently do not deploy a bundled app. Expect cold starts to be worse until we can bundle again.
-
 ### 3 commands to get started
 
 ```bash
@@ -39,7 +37,7 @@ denofunc init
 denofunc start
 
 # deploy the app
-denofunc publish $functionAppName
+denofunc publish $functionAppName [--slot $slotName]
 ```
 
 For more information, try the [quickstart](#getting-started) below.
@@ -61,7 +59,7 @@ Check out the [new project template](https://github.com/anthonychu/azure-functio
 * Linux, macOS, Windows
 * [Deno](https://deno.land/x/install/)
     - Tested on:
-        - `1.5.4`
+        - `1.10.2`
 * [Azure Functions Core Tools V3](https://github.com/Azure/azure-functions-core-tools#azure-functions-core-tools) - needed for running the app locally and deploying it
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
 * `denofunc` CLI - see [below](#install-the-denofunc-cli)

@@ -1,37 +1,67 @@
-const { args } = Deno;
 import {
   parse,
   readZip,
   ensureDir,
   move,
   walk,
+  semver,
 } from "./deps.ts";
 
-const shouldBundle = false;
+const baseExecutableFileName = "worker";
+const bundleFileName = "worker.bundle.js";
+const commonDenoOptions = ["--allow-env", "--allow-net", "--allow-read"];
 const parsedArgs = parse(Deno.args);
 
-if (parsedArgs["help"]) {
+const bundleStyles = ["executable", "jsbundle", "none"];
+const STYLE_EXECUTABLE = 0;
+const STYLE_JSBUNDLE = 1;
+const STYLE_NONE = 2;
+
+if (parsedArgs._[0] === "help") {
   printHelp();
   Deno.exit();
 }
 
-if (args.length >= 1 && args[0] === "init") {
-  const templateDownloadBranch: string | undefined = args[1];
+if (parsedArgs._.length >= 1 && parsedArgs._[0] === "init") {
+  const templateDownloadBranch: string | undefined = parsedArgs?._[1]?.toString();
   await initializeFromTemplate(templateDownloadBranch);
 } else if (
-  args.length === 1 && args[0] === "start" ||
-  args.length === 2 && `${args[0]} ${args[1]}` === "host start"
+  parsedArgs._.length === 1 && parsedArgs._[0] === "start" ||
+  parsedArgs._.length === 2 && parsedArgs._.join(' ') === "host start"
 ) {
   await generateFunctions();
   await createJSBundle();
   await runFunc("start");
-} else if (args.length === 2 && args[0] === "publish") {
-  const platform = await getAppPlatform(args[1]);
-  await updateHostJson(platform);
-  await downloadBinary(platform);
+} else if (parsedArgs._[0] === "publish" && parsedArgs._.length === 2) {
+  const bundleStyle = parsedArgs["bundle-style"]      // use specified bundle style
+   || (semver.satisfies(Deno.version.deno, ">=1.6.0") // default style depends on Deno runtime version
+      ? bundleStyles[STYLE_EXECUTABLE]                //   for v1.6.0 or later
+      : bundleStyles[STYLE_JSBUNDLE]                  //   for others
+    );
+  if (!bundleStyles.includes(bundleStyle)) {
+    console.error(`The value \`${parsedArgs["bundle-style"]}\` of \`--bundle-style\` option is not acceptable.`)
+    Deno.exit(1);
+  } else if (semver.satisfies(Deno.version.deno, "<1.6.0") && bundleStyle === bundleStyles[STYLE_EXECUTABLE]) {
+    console.error(`Deno version v${Deno.version.deno} doesn't support \`${bundleStyles[STYLE_EXECUTABLE]}\` for bundle style.`);
+    Deno.exit(1);
+  }
+  const appName = parsedArgs._[1].toString();
+  const slotName = parsedArgs["slot"]?.toString();
+  const platform = await getAppPlatform(appName, slotName);
+  if (!["windows", "linux"].includes(platform)) {
+    console.error(`The value \`${platform}\` for the function app \`${appName + (slotName ? `/${slotName}` : "")}\` is not valid.`);
+    Deno.exit(1);
+  }
+  await updateHostJson(platform, bundleStyle);
   await generateFunctions();
-  await createJSBundle();
-  await publishApp(args[1]);
+
+  if (bundleStyle === bundleStyles[STYLE_EXECUTABLE]) {
+    await generateExecutable(platform);
+  } else {
+    await downloadBinary(platform);
+    if (bundleStyle === bundleStyles[STYLE_JSBUNDLE]) await createJSBundle();
+  }
+  await publishApp(appName, slotName);
 } else {
   printHelp();
 }
@@ -67,24 +97,49 @@ async function listFiles(dir: string) {
   return files;
 }
 
-async function createJSBundle() {
-  if (shouldBundle) {
-    const bundleFileName = "worker.bundle.js";
-    const cmd = ["deno", "bundle", "--unstable", "worker.ts", bundleFileName];
-    console.info(`Running command: ${cmd.join(" ")}`);
-    const generateProcess = Deno.run({ cmd });
-    await generateProcess.status();
-  }
+async function generateExecutable(platformArg?: string) {
+  try {
+    await Deno.remove('./bin', { recursive: true });
+    await Deno.remove(`./${bundleFileName}`);
+  } catch { }
+
+  const platform = platformArg || Deno.build.os;
+  await Deno.mkdir(`./bin/${platform}`, { recursive: true });
+
+  const cmd = [
+    "deno",
+    "compile",
+    "--unstable",
+    ...(semver.satisfies(Deno.version.deno, ">=1.7.1 <1.10.0") ? ["--lite"] : []), // `--lite` option is implemented only between v1.7.1 and v1.9.x
+    ...commonDenoOptions,
+    "--output",
+    `./bin/${platform}/${baseExecutableFileName}`,
+    ...(['windows', 'linux'].includes(platform)
+      ? ['--target', platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'x86_64-unknown-linux-gnu']
+      : []
+    ),
+    "worker.ts"
+  ];
+  console.info(`Running command: ${cmd.join(" ")}`);
+  const generateProcess = Deno.run({ cmd });
+  await generateProcess.status();
 }
 
-async function getAppPlatform(appName: string): Promise<string> {
-  console.info(`Checking platform type of : ${appName} ...`);
+async function createJSBundle() {
+  const cmd = ["deno", "bundle", "--unstable", "worker.ts", bundleFileName];
+  console.info(`Running command: ${cmd.join(" ")}`);
+  const generateProcess = Deno.run({ cmd });
+  await generateProcess.status();
+}
+
+async function getAppPlatform(appName: string, slotName?: string): Promise<string> {
+  console.info(`Checking platform type of : ${appName + (slotName ? `/${slotName}` : "")} ...`);
   const azResourceCmd = [
     "az",
     "resource",
     "list",
     "--resource-type",
-    "Microsoft.web/sites",
+    `Microsoft.web/sites${slotName ? "/slots" : ""}`,
     "-o",
     "json",
   ];
@@ -100,32 +155,8 @@ async function getAppPlatform(appName: string): Promise<string> {
 
   try {
     const resource = resources.find((resource: any) =>
-      resource.name === appName
+      resource.name === (appName + (slotName ? `/${slotName}` : ""))
     );
-    
-    if ((resource.kind as string).includes("linux")) {
-      return "linux";
-    }
-
-    const azFunctionCmd = [
-      "az",
-      "functionapp",
-      "config",
-      "show",
-      "--ids",
-      resource.id,
-      "-o",
-      "json",
-    ];
-    const azFunctionProcess = await runWithRetry(
-      { cmd: azFunctionCmd, stdout: "piped" },
-      "az.cmd",
-    );
-    const azFunctionOutput = await azFunctionProcess.output();
-    const config = JSON.parse(
-      new TextDecoder().decode(azFunctionOutput),
-    );
-    azFunctionProcess.close();
 
     const azFunctionAppSettingsCmd = [
       "az",
@@ -135,8 +166,12 @@ async function getAppPlatform(appName: string): Promise<string> {
       "set",
       "--ids",
       resource.id,
+      ...(slotName
+        ? ["--slot", slotName]
+        : []
+      ),
       "--settings",
-      "WEBSITE_LOAD_USER_PROFILE=1",
+      "FUNCTIONS_WORKER_RUNTIME=custom",
       "-o",
       "json",
     ];
@@ -147,27 +182,36 @@ async function getAppPlatform(appName: string): Promise<string> {
     await azFunctionAppSettingsProcess.status();
     azFunctionAppSettingsProcess.close();
   
-    return "windows";
+    return (resource.kind as string).includes("linux") ? "linux" : "windows";
   } catch {
-    throw new Error(`Not found: ${appName}`);
+    throw new Error(`Not found: ${appName + (slotName ? `/${slotName}` : "")}`);
   }
 }
 
-async function updateHostJson(platform: string) {
-  // update `defaultExecutablePath` in host.json
+async function updateHostJson(platform: string, bundleStyle: string) {
+  // update `defaultExecutablePath` and `arguments` in host.json
   const hostJsonPath = "./host.json";
   if (!(await fileExists(hostJsonPath))) {
     throw new Error(`\`${hostJsonPath}\` not found`);
   }
 
   const hostJSON: any = await readJson(hostJsonPath);
-  hostJSON.customHandler.description.defaultExecutablePath = platform === "windows"
-    ? "D:\\home\\site\\wwwroot\\bin\\windows\\deno.exe"
-    : "/home/site/wwwroot/bin/linux/deno",
-    await writeJson(hostJsonPath, hostJSON); // returns a promise
+  if (!hostJSON.customHandler) hostJSON.customHandler = {};
+  hostJSON.customHandler.description = {
+    defaultExecutablePath: `bin/${platform}/${bundleStyle === bundleStyles[STYLE_EXECUTABLE] ? baseExecutableFileName : "deno"}${platform === "windows" ? ".exe" : ""}`,
+    arguments: bundleStyle === bundleStyles[STYLE_EXECUTABLE]
+      ? []
+      : [
+        "run",
+        ...commonDenoOptions,
+        bundleStyle === bundleStyles[STYLE_JSBUNDLE] ? bundleFileName : "worker.ts"
+      ]
+  };
+
+  await writeJson(hostJsonPath, hostJSON); // returns a promise
 }
 
-function writeJson(path: string, data: object): void  {
+function writeJson(path: string, data: object): void {
   Deno.writeTextFileSync(path, JSON.stringify(data, null, 2));
 }
 
@@ -193,12 +237,14 @@ async function downloadBinary(platform: string) {
       await Deno.remove(entry);
     }
   }
+  try {
+    await Deno.remove(`./${bundleFileName}`);
+  } catch { }
 
   const binZipPath = `${binDir}/deno.zip`;
   if (!(await fileExists(binPath))) {
     const downloadUrl =
-      `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-${
-        archive[platform]
+      `https://github.com/denoland/deno/releases/download/v${Deno.version.deno}/deno-x86_64-${archive[platform]
       }.zip`;
     console.info(`Downloading deno binary from: ${downloadUrl} ...`);
     // download deno binary (that gets deployed to Azure)
@@ -270,9 +316,7 @@ async function generateFunctions() {
     cmd: [
       "deno",
       "run",
-      "--allow-net",
-      "--allow-env",
-      "--allow-read",
+      ...commonDenoOptions,
       "--allow-write",
       "--unstable",
       "--no-check",
@@ -305,8 +349,7 @@ async function runWithRetry(
   } catch (ex) {
     if (Deno.build.os === "windows") {
       console.info(
-        `Could not start ${
-          runOptions.cmd[0]
+        `Could not start ${runOptions.cmd[0]
         } from path, searching for executable...`,
       );
       const whereCmd = ["where.exe", backupCommand];
@@ -335,30 +378,30 @@ async function runWithRetry(
   }
 }
 
-async function publishApp(appName: string) {
-  await runFunc(
+async function publishApp(appName: string, slotName?: string) {
+  const runFuncArgs = [
     "azure",
     "functionapp",
     "publish",
-    appName,
-    "--force"
-  );
+    appName
+  ];
+  await runFunc(...(slotName ? runFuncArgs.concat(["--slot", slotName]) : runFuncArgs));
 }
 
 function printLogo() {
   const logo = `
-           @@@@@@@@@@@,         
-       @@@@@@@@@@@@@@@@@@@                        %%%%%%%%%%%%
-     @@@@@@        @@@@@@@@@@                     %%%%%%%%%%%%
-   @@@@@ @  @           *@@@@@              @   %%%%%%%%%%%%    @
-   @@@                    @@@@@           @@   %%%%%%%%%%%%      @@
-  @@@@@                   @@@@@        @@@    %%%%%%%%%%%%%%%%%%%%%%    @@@
-  @@@@@@@@@@@@@@@          @@@@      @@      %%%%%%%%%%%%%%%%%%%%        @@
-   @@@@@@@@@@@@@@          @@@@        @@         %%%%%%%%       @@
-    @@@@@@@@@@@@@@         @@@           @@      %%%%%%       @@
-     @@@@@@@@@@@@@         @               @@    %%%%      @@
-       @@@@@@@@@@@                              %%%%
-            @@@@@@@                             %%        
+           @@@@@@@@@@@,
+       @@@@@@@@@@@@@@@@@@@                        %%%%%%
+     @@@@@@        @@@@@@@@@@                    %%%%%%
+   @@@@@ @  @           *@@@@@              @   %%%%%%    @
+   @@@                    @@@@@           @@   %%%%%%      @@
+  @@@@@                   @@@@@        @@@    %%%%%%%%%%%    @@@
+  @@@@@@@@@@@@@@@          @@@@      @@      %%%%%%%%%%        @@
+   @@@@@@@@@@@@@@          @@@@        @@         %%%%       @@
+    @@@@@@@@@@@@@@         @@@           @@      %%%       @@
+     @@@@@@@@@@@@@         @               @@    %%      @@
+       @@@@@@@@@@@                              %%
+            @@@@@@@                             %
     `;
   console.info(logo);
 }
@@ -378,7 +421,14 @@ denofunc init
 denofunc start
     Generate functions artifacts and start Azure Functions Core Tools
 
-denofunc publish <function_app_name>
+denofunc publish <function_app_name> [options]
     Publish to Azure
+    options:
+      --slot         <slot_name>                Specify name of the deployment slot
+      --bundle-style executable|jsbundle|none   Select bundle style on deployment 
+
+        executable:   Bundle as one executable(default option for Deno v1.6.0 or later).
+        jsbundle:     Bundle as one javascript worker & Deno runtime
+        none:         No bundle
     `);
 }
