@@ -94,6 +94,13 @@ export class AzureFunctionsWorker {
 
   constructor(functionRegistrations: FunctionRegistration[]) {
     this.#functionRegistrations = functionRegistrations;
+
+    const functionNames:string[] = [];
+    this.#functionRegistrations.map(functionRegistration => functionRegistration.name).forEach((name) => {
+      if (functionNames.includes(name)) throw new Error(`A function name \`${name}\` is used in some functions. Make sure each function name.`);
+      functionNames.push(name);
+    })
+
     const router = new Router();
 
     for (const registration of functionRegistrations) {
