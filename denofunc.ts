@@ -10,6 +10,7 @@ import {
 const baseExecutableFileName = "worker";
 const bundleFileName = "worker.bundle.js";
 const commonDenoOptions = ["--allow-env", "--allow-net", "--allow-read"];
+const additionalDenoOptions:string[] = [];
 const parsedArgs = parse(Deno.args);
 
 const bundleStyles = ["executable", "jsbundle", "none"];
@@ -45,6 +46,11 @@ if (parsedArgs._.length >= 1 && parsedArgs._[0] === "init") {
     console.error(`Deno version v${Deno.version.deno} doesn't support \`${bundleStyles[STYLE_EXECUTABLE]}\` for bundle style.`);
     Deno.exit(1);
   }
+  // adding options which names start with `--allow-` and are not included in `commonDenoOptions`.
+  additionalDenoOptions.splice(0, 0,
+    ...Object.keys(parsedArgs).map(p => `--${p}`)
+      .filter(key => key.startsWith('--allow-') && !commonDenoOptions.includes(key))
+  );
   const appName = parsedArgs._[1].toString();
   const slotName = parsedArgs["slot"]?.toString();
   const platform = await getAppPlatform(appName, slotName);
@@ -111,7 +117,7 @@ async function generateExecutable(platformArg?: string) {
     "compile",
     "--unstable",
     ...(semver.satisfies(Deno.version.deno, ">=1.7.1 <1.10.0") ? ["--lite"] : []), // `--lite` option is implemented only between v1.7.1 and v1.9.x
-    ...commonDenoOptions,
+    ...commonDenoOptions.concat(additionalDenoOptions),
     "--output",
     `./bin/${platform}/${baseExecutableFileName}`,
     ...(['windows', 'linux'].includes(platform)
@@ -203,7 +209,7 @@ async function updateHostJson(platform: string, bundleStyle: string) {
       ? []
       : [
         "run",
-        ...commonDenoOptions,
+        ...commonDenoOptions.concat(additionalDenoOptions),
         bundleStyle === bundleStyles[STYLE_JSBUNDLE] ? bundleFileName : "worker.ts"
       ]
   };
