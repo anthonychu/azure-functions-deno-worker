@@ -437,5 +437,7 @@ denofunc publish <function_app_name> [options]
         executable:   Bundle as one executable(default option for Deno v1.6.0 or later).
         jsbundle:     Bundle as one javascript worker & Deno runtime
         none:         No bundle
+      --allow-run     Same as Deno's permission option
+      --allow-write   Same as Deno's permission option
     `);
 }
