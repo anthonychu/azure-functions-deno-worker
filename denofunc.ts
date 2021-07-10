@@ -35,7 +35,7 @@ if (parsedArgs._.length >= 1 && parsedArgs._[0] === "init") {
   await runFunc("start");
 } else if (parsedArgs._[0] === "publish" && parsedArgs._.length === 2) {
   const bundleStyle = parsedArgs["bundle-style"]      // use specified bundle style
-   || (semver.satisfies(Deno.version.deno, ">=1.6.0") // default style depends on Deno runtime version
+    || (semver.satisfies(Deno.version.deno, ">=1.6.0") // default style depends on Deno runtime version
       ? bundleStyles[STYLE_EXECUTABLE]                //   for v1.6.0 or later
       : bundleStyles[STYLE_JSBUNDLE]                  //   for others
     );
@@ -187,7 +187,7 @@ async function getAppPlatform(appName: string, slotName?: string): Promise<strin
     );
     await azFunctionAppSettingsProcess.status();
     azFunctionAppSettingsProcess.close();
-  
+
     return (resource.kind as string).includes("linux") ? "linux" : "windows";
   } catch {
     throw new Error(`Not found: ${appName + (slotName ? `/${slotName}` : "")}`);
@@ -330,7 +330,8 @@ async function generateFunctions() {
     ],
     env: { "DENOFUNC_GENERATE": "1" },
   });
-  await generateProcess.status();
+  const status = await generateProcess.status();
+  if (status.code || !status.success) Deno.exit(status.code);
 }
 
 async function runFunc(...args: string[]) {
