@@ -6,4 +6,4 @@ export {
   walk,
 } from "https://deno.land/std@0.79.0/fs/mod.ts";
 export * from "./worker_deps.ts";
-export * as semver from "https://deno.land/x/semver@v1.3.0/mod.ts";
+export * as semver from "https://deno.land/x/semver@v1.4.0/mod.ts";

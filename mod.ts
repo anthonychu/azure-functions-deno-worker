@@ -94,6 +94,17 @@ export class AzureFunctionsWorker {
 
   constructor(functionRegistrations: FunctionRegistration[]) {
     this.#functionRegistrations = functionRegistrations;
+
+    // check if a function name is already used in another function
+    const funcNames:string[] = [];
+    this.#functionRegistrations.forEach((funcReg) => {
+      if (funcNames.includes(funcReg.name)) 
+        throw new Error(
+          `A function name \`${funcReg.name}\` is already used in another function. Make sure each function name.`
+        );
+      funcNames.push(funcReg.name);
+    });
+
     const router = new Router();
 
     for (const registration of functionRegistrations) {
