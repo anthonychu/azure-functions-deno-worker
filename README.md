@@ -3,7 +3,7 @@
 ```
            @@@@@@@@@@@,         
        @@@@@@@@@@@@@@@@@@@                        %%%%%%
-     @@@@@@        @@@@@@@@@@                     %%%%%%
+     @@@@@@        @@@@@@@@@@                    %%%%%%
    @@@@@ @  @           *@@@@@              @   %%%%%%    @
    @@@                    @@@@@           @@   %%%%%%      @@
   @@@@@                   @@@@@        @@@    %%%%%%%%%%%    @@@
@@ -59,7 +59,7 @@ Check out the [new project template](https://github.com/anthonychu/azure-functio
 * Linux, macOS, Windows
 * [Deno](https://deno.land/x/install/)
     - Tested on:
-        - `1.12.2`
+        - `1.13.1`
 * [Azure Functions Core Tools V3](https://github.com/Azure/azure-functions-core-tools#azure-functions-core-tools) - needed for running the app locally and deploying it
 * [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest#install) - needed to deploy the app
 * `denofunc` CLI - see [below](#install-the-denofunc-cli)
