@@ -37,7 +37,7 @@ denofunc init
 denofunc start
 
 # deploy the app
-denofunc publish $functionAppName [--slot $slotName]
+denofunc publish $functionAppName [--slot $slotName] [--allow-run] [--allow-write]
 ```
 
 For more information, try the [quickstart](#getting-started) below.
@@ -79,7 +79,7 @@ To install the CLI, run the following Deno command.
 
 ```bash
 deno install --allow-run --allow-read --allow-write --allow-net --unstable --force \
-    --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/v0.7.0/denofunc.ts
+    --name=denofunc https://raw.githubusercontent.com/anthonychu/azure-functions-deno-worker/v0.8.0/denofunc.ts
 ```
 
 Confirm it is installed correctly:
