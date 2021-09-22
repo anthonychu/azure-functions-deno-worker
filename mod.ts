@@ -46,6 +46,7 @@ class FunctionHttpRequest implements HttpRequest {
   headers: { [key: string]: string } = {};
   query: { [key: string]: string } = {};
   params: { [key: string]: string } = {};
+  url = "";
   body?: any;
   rawBody?: any;
 
