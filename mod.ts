@@ -149,7 +149,25 @@ export class AzureFunctionsWorker {
           // Merge `context.res` into `context.bindings`
           // `context.res` is the special property for HTTP response
           // https://docs.microsoft.com/en-us/azure/azure-functions/functions-reference-node?tabs=v2#response-object
-          if (context.res) context.bindings.res = context.res;
+          if (!context.bindings.res) {
+            if (context.res?.status) {
+              context.res.statusCode = context.res.status;
+              delete context.res.status;
+            }
+            context.bindings.res = context.res;
+          }
+          registration.metadata?.bindings?.forEach((bindingDef:any) => {
+            if (bindingDef.type !== "http" || bindingDef.direction !== "out") return;
+            if (bindingDef.name === "$return") {
+              result.statusCode = result.status;
+              delete result.status;
+              return;
+            }
+            if (!context.bindings[bindingDef.name].status) return
+            const httpOutBinding = context.bindings[bindingDef.name]
+            httpOutBinding.statusCode = httpOutBinding.status;
+            delete httpOutBinding.status;
+          });
 
           ctx.response.body = {
             Logs: context.log.logs,
