@@ -66,6 +66,7 @@ async function parseBody(body: { type: string; value: any }) {
 function tryJsonParse(input: any) {
   try {
     input = JSON.parse(input);
+    input = JSON.parse(input);
   } catch { }
   return input;
 }
