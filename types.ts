@@ -72,10 +72,10 @@ export interface HttpRequest {
      * HTTP request method used to invoke this function.
      */
   method: HttpMethod | null;
-  // /**
-  //  * Request URL.
-  //  */
-  // url: string;
+  /**
+   * Request URL.
+   */
+  url: string;
   /**
      * HTTP request headers.
      */
